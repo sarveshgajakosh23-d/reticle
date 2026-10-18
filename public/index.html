@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reticle — AI-assisted retinal screening</title>
+<meta name="description" content="Reticle turns a retinal photograph into an explainable AI screening read for clinics and community health workers." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,340..600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3F2ED;
+    --paper-raised:#FBFAF7;
+    --ink:#16181A;
+    --slate:#63666B;
+    --slate-soft:#9799A0;
+    --line:#DEDBD2;
+    --teal:#0E5C55;
+    --teal-deep:#0A423D;
+    --teal-tint:#DCEAE7;
+    --amber:#A8701F;
+    --amber-tint:#F3E4CC;
+    --critical:#A3372B;
+    --critical-tint:#F3DDD9;
+    --success:#3E7A54;
+    --success-tint:#DEEBE1;
+    --radius-s:6px;
+    --radius-m:10px;
+    --shadow-1: 0 1px 2px rgba(22,24,26,0.06), 0 1px 1px rgba(22,24,26,0.04);
+    --shadow-2: 0 8px 24px rgba(22,24,26,0.10), 0 2px 6px rgba(22,24,26,0.06);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  img,svg{max-width:100%;display:block;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; scroll-behavior:auto !important;}
+  }
+
+  :focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:3px;
+    border-radius:3px;
+  }
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 32px;}
+  @media (max-width:720px){.wrap{padding:0 20px;}}
+
+  /* ---------- NAV ---------- */
+  header.nav{
+    position:sticky; top:0; z-index:60;
+    background:rgba(243,242,237,0.86);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    transition:padding .25s ease, box-shadow .25s ease;
+  }
+  header.nav.compact{box-shadow:var(--shadow-1);}
+  .nav-inner{
+    max-width:1240px;margin:0 auto;padding:22px 32px;
+    display:flex;align-items:center;justify-content:space-between;
+    transition:padding .25s ease;
+  }
+  header.nav.compact .nav-inner{padding:13px 32px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:19px;letter-spacing:-0.01em;}
+  .brand-mark{width:22px;height:22px;flex:none;}
+  .nav-links{display:flex;gap:30px;list-style:none;margin:0;padding:0;}
+  .nav-links a{
+    text-decoration:none;color:var(--slate);font-size:14.5px;font-weight:500;
+    padding:6px 2px;border-bottom:1px solid transparent;transition:color .15s ease, border-color .15s ease;
+  }
+  .nav-links a:hover{color:var(--ink);border-color:var(--line);}
+  .nav-cta{
+    background:var(--ink);color:var(--paper-raised);border:none;border-radius:var(--radius-s);
+    padding:10px 18px;font-size:14.5px;font-weight:600;cursor:pointer;
+    transition:background .15s ease, transform .15s ease;white-space:nowrap;
+  }
+  .nav-cta:hover{background:var(--teal-deep);}
+  .nav-cta:active{transform:scale(0.98);}
+  .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:6px;}
+  .nav-toggle span, .nav-toggle span::before, .nav-toggle span::after{
+    content:"";display:block;width:22px;height:2px;background:var(--ink);position:relative;
+  }
+  .nav-toggle span::before{position:absolute;top:-7px;}
+  .nav-toggle span::after{position:absolute;top:7px;}
+
+  @media (max-width:900px){
+    .nav-links{display:none;}
+    .nav-toggle{display:block;}
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{padding:64px 0 40px;}
+  .hero-grid{
+    display:grid;grid-template-columns:1.05fr 0.95fr;gap:64px;align-items:center;
+  }
+  @media (max-width:980px){.hero-grid{grid-template-columns:1fr;gap:44px;}}
+
+  .status-pill{
+    display:inline-flex;align-items:center;gap:8px;
+    border:1px solid var(--line);background:var(--paper-raised);
+    padding:6px 12px 6px 10px;border-radius:100px;font-size:12.5px;font-weight:500;
+    color:var(--slate);margin-bottom:26px;
+  }
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);
+    box-shadow:0 0 0 3px var(--teal-tint);}
+  .status-dot.pulse{animation:pulseDot 2.4s ease-in-out infinite;}
+  @keyframes pulseDot{
+    0%,100%{box-shadow:0 0 0 3px var(--teal-tint);}
+    50%{box-shadow:0 0 0 6px var(--teal-tint);}
+  }
+
+  h1.display{
+    font-family:var(--serif);
+    font-weight:460;
+    font-size:clamp(40px,5.4vw,68px);
+    line-height:1.04;
+    letter-spacing:-0.015em;
+    margin:0 0 22px;
+    max-width:11.5ch;
+  }
+  .hero-sub{
+    font-size:18px;color:var(--slate);max-width:46ch;margin:0 0 30px;line-height:1.6;
+  }
+  .cta-row{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:38px;}
+  .btn-primary{
+    background:var(--teal);color:#fff;border:none;border-radius:var(--radius-s);
+    padding:14px 24px;font-size:15.5px;font-weight:600;cursor:pointer;
+    box-shadow:var(--shadow-1);transition:background .15s ease, transform .15s ease;
+  }
+  .btn-primary:hover{background:var(--teal-deep);}
+  .btn-primary:active{transform:scale(0.98);}
+  .btn-link{
+    background:none;border:none;color:var(--ink);font-size:15.5px;font-weight:600;cursor:pointer;
+    padding:14px 4px;border-bottom:1px solid var(--ink);border-radius:0;
+  }
+  .btn-link:hover{color:var(--teal-deep);border-color:var(--teal-deep);}
+
+  .stat-row{display:flex;flex-wrap:wrap;gap:0;font-size:13.5px;color:var(--slate);border-top:1px solid var(--line);padding-top:20px;}
+  .stat-row span{padding:2px 20px 2px 0;position:relative;}
+  .stat-row span:not(:last-child)::after{content:"·";position:absolute;right:8px;color:var(--slate-soft);}
+  .stat-row strong{color:var(--ink);font-weight:600;}
+
+  /* retina visual panel */
+  .retina-panel{
+    position:relative;background:var(--paper-raised);border:1px solid var(--line);
+    border-radius:var(--radius-m);padding:26px;box-shadow:var(--shadow-2);
+  }
+  .retina-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .retina-panel-head .tag{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:0.03em;color:var(--slate);
+  }
+  .retina-stage{position:relative;border-radius:8px;overflow:hidden;background:#0d0f10;aspect-ratio:1/1;}
+  .retina-stage svg{width:100%;height:100%;display:block;}
+  .hover-label{
+    position:absolute;background:var(--ink);color:#fff;font-size:12px;font-family:var(--mono);
+    padding:6px 9px;border-radius:5px;pointer-events:none;opacity:0;transform:translateY(4px);
+    transition:opacity .18s ease, transform .18s ease;white-space:nowrap;z-index:5;
+    box-shadow:var(--shadow-2);
+  }
+  .hover-label.show{opacity:1;transform:translateY(0);}
+  .hover-label .conf{color:var(--teal-tint);}
+
+  .retina-panel-foot{
+    display:flex;justify-content:space-between;align-items:center;margin-top:14px;
+    font-size:12.5px;color:var(--slate-soft);
+  }
+
+  .region-marker{cursor:pointer;}
+  .region-marker .ring{fill:none;stroke:#E8B45A;stroke-width:1.6;stroke-dasharray:3 3;opacity:0;transition:opacity .2s ease;}
+  .region-marker:hover .ring, .region-marker.active .ring{opacity:0.95;}
+  .region-marker .dot{fill:#E8B45A;opacity:0.85;}
+
+  /* ---------- SECTION GENERIC ---------- */
+  section{padding:96px 0;}
+  section.tight{padding:64px 0;}
+  .section-head{max-width:640px;margin-bottom:56px;}
+  .section-head h2{
+    font-family:var(--serif);font-weight:460;font-size:clamp(28px,3.4vw,40px);
+    line-height:1.12;letter-spacing:-0.01em;margin:0 0 14px;
+  }
+  .section-head p{color:var(--slate);font-size:16.5px;margin:0;max-width:52ch;line-height:1.6;}
+  .divider{border:none;border-top:1px solid var(--line);margin:0;}
+
+  /* how it works pipeline */
+  .pipeline{display:flex;align-items:stretch;gap:0;position:relative;}
+  .pipeline-step{flex:1;position:relative;padding:0 18px 0 0;}
+  .pipeline-step:first-child{padding-left:0;}
+  .pipeline-node{
+    display:flex;align-items:center;gap:12px;margin-bottom:16px;
+  }
+  .pipeline-index{
+    font-family:var(--mono);font-size:12px;color:var(--slate-soft);
+  }
+  .pipeline-name{font-weight:600;font-size:16px;}
+  .pipeline-line{height:1px;background:var(--line);position:absolute;top:9px;left:0;right:-18px;z-index:0;}
+  .pipeline-step:last-child .pipeline-line{display:none;}
+  .pipeline-desc{color:var(--slate);font-size:14.5px;line-height:1.55;max-width:26ch;}
+  @media (max-width:900px){
+    .pipeline{flex-direction:column;gap:28px;}
+    .pipeline-line{display:none;}
+  }
+
+  /* what the ai saw / explainability grid */
+  .explain-grid{display:grid;grid-template-columns:0.9fr 1.1fr;gap:56px;align-items:start;}
+  @media (max-width:900px){.explain-grid{grid-template-columns:1fr;}}
+  .evidence-item{
+    display:flex;gap:16px;padding:20px 0;border-top:1px solid var(--line);cursor:pointer;
+    transition:background .15s ease;
+  }
+  .evidence-item:last-child{border-bottom:1px solid var(--line);}
+  .evidence-item:hover, .evidence-item.active{background:var(--paper-raised);}
+  .evidence-index{font-family:var(--mono);font-size:13px;color:var(--slate-soft);padding-top:2px;min-width:22px;}
+  .evidence-body h4{margin:0 0 6px;font-size:15.5px;font-weight:600;}
+  .evidence-body p{margin:0;color:var(--slate);font-size:14px;line-height:1.55;}
+  .evidence-conf{font-family:var(--mono);font-size:12.5px;color:var(--teal-deep);margin-top:6px;display:inline-block;}
+
+  /* trust section */
+  .trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius-m);overflow:hidden;}
+  @media (max-width:820px){.trust-grid{grid-template-columns:1fr;}}
+  .trust-cell{background:var(--paper-raised);padding:30px 28px;}
+  .trust-cell h4{margin:0 0 8px;font-size:15.5px;font-weight:600;}
+  .trust-cell p{margin:0;color:var(--slate);font-size:14px;line-height:1.6;}
+
+  /* technology architecture */
+  .arch{
+    display:flex;flex-direction:column;align-items:flex-start;gap:0;max-width:420px;
+  }
+  .arch-node{
+    display:flex;align-items:center;gap:16px;padding:16px 20px;border:1px solid var(--line);
+    border-radius:var(--radius-s);background:var(--paper-raised);width:100%;position:relative;z-index:1;
+  }
+  .arch-node.active{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal);}
+  .arch-node .n{font-family:var(--mono);font-size:12px;color:var(--slate-soft);min-width:18px;}
+  .arch-node .t{font-weight:600;font-size:15px;}
+  .arch-connector{width:1px;height:26px;background:var(--line);margin-left:39px;position:relative;}
+  .arch-connector::after{
+    content:"";position:absolute;left:-3px;bottom:-1px;width:0;height:0;
+    border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:5px solid var(--slate-soft);
+  }
+  .arch-flow-dot{
+    position:absolute;left:-3.5px;top:0;width:8px;height:8px;border-radius:50%;background:var(--teal);
+    animation:flowDown 3.2s linear infinite;
+  }
+  @keyframes flowDown{0%{top:0;opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{top:100%;opacity:0;}}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:44px 0;}
+  .footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+  .footer-inner p{margin:0;color:var(--slate-soft);font-size:13px;}
+  .footer-links{display:flex;gap:22px;list-style:none;padding:0;margin:0;}
+  .footer-links a{font-size:13px;color:var(--slate);text-decoration:none;}
+  .footer-links a:hover{color:var(--ink);}
+  .disclaimer-strip{
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-s);
+    padding:14px 18px;font-size:13px;color:var(--slate);margin-bottom:28px;display:flex;gap:10px;align-items:flex-start;
+  }
+  .disclaimer-strip svg{flex:none;margin-top:2px;color:var(--amber);}
+
+  /* ================= OVERLAY WORKSPACE ================= */
+  .overlay{
+    position:fixed;inset:0;background:var(--paper);z-index:200;
+    display:none;flex-direction:column;
+  }
+  .overlay.open{display:flex;}
+  .overlay-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 32px;border-bottom:1px solid var(--line);flex:none;
+  }
+  .overlay-bar .title{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;}
+  .overlay-close{
+    background:none;border:1px solid var(--line);border-radius:var(--radius-s);
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .overlay-close:hover{background:var(--paper-raised);}
+  .overlay-body{flex:1;overflow-y:auto;padding:44px 32px 80px;}
+  .overlay-inner{max-width:1120px;margin:0 auto;}
+
+  /* step: upload */
+  .upload-stage{display:grid;grid-template-columns:1fr;gap:0;max-width:720px;margin:0 auto;}
+  .upload-kicker{font-family:var(--mono);font-size:12.5px;color:var(--slate-soft);margin-bottom:10px;}
+  .upload-stage h2{font-family:var(--serif);font-size:32px;font-weight:460;margin:0 0 12px;}
+  .upload-stage>p{color:var(--slate);margin:0 0 34px;font-size:15.5px;max-width:52ch;}
+  .dropzone{
+    border:1.5px dashed var(--line);border-radius:var(--radius-m);padding:56px 30px;text-align:center;
+    background:var(--paper-raised);transition:border-color .15s ease, background .15s ease;cursor:pointer;
+  }
+  .dropzone.drag{border-color:var(--teal);background:var(--teal-tint);}
+  .dropzone svg{margin:0 auto 16px;color:var(--slate-soft);}
+  .dropzone .dz-title{font-weight:600;font-size:15.5px;margin-bottom:6px;}
+  .dropzone .dz-sub{color:var(--slate);font-size:13.5px;}
+  .dropzone .dz-or{color:var(--slate-soft);font-size:12.5px;margin:14px 0;}
+  .dz-browse{
+    background:var(--ink);color:#fff;border:none;border-radius:var(--radius-s);
+    padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;
+  }
+
+  .preview-card{display:none;border:1px solid var(--line);border-radius:var(--radius-m);background:var(--paper-raised);overflow:hidden;}
+  .preview-card.show{display:block;}
+  .preview-top{display:flex;gap:20px;padding:20px;}
+  .preview-thumb{width:110px;height:110px;border-radius:8px;overflow:hidden;flex:none;background:#0d0f10;}
+  .preview-thumb svg,.preview-thumb img{width:100%;height:100%;object-fit:cover;}
+  .preview-meta{flex:1;}
+  .preview-meta .fname{font-weight:600;font-size:14.5px;margin-bottom:10px;word-break:break-all;}
+  .qc-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:13px;color:var(--slate);}
+  .qc-bar{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden;max-width:180px;}
+  .qc-fill{height:100%;background:var(--teal);border-radius:3px;}
+  .qc-label{min-width:110px;}
+  .qc-value{font-family:var(--mono);font-size:12px;color:var(--ink);min-width:36px;text-align:right;}
+  .preview-actions{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-top:1px solid var(--line);}
+  .link-btn{background:none;border:none;color:var(--slate);font-size:13.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  .link-btn:hover{color:var(--ink);}
+
+  /* step: scanning */
+  .scan-stage{display:grid;grid-template-columns:0.9fr 1.1fr;gap:56px;align-items:center;max-width:1000px;margin:0 auto;}
+  @media (max-width:860px){.scan-stage{grid-template-columns:1fr;}}
+  .scan-visual{position:relative;border-radius:10px;overflow:hidden;background:#0d0f10;aspect-ratio:1/1;box-shadow:var(--shadow-2);}
+  .scan-visual svg,.scan-visual img{width:100%;height:100%;object-fit:cover;}
+  .scan-line{
+    position:absolute;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, transparent, #7FE0C9, transparent);
+    box-shadow:0 0 16px 2px rgba(127,224,201,0.6);
+    animation:scanMove 2.6s ease-in-out infinite;
+  }
+  @keyframes scanMove{0%{top:2%;}50%{top:96%;}100%{top:2%;}}
+
+  .steps-list{list-style:none;margin:0;padding:0;}
+  .steps-list li{
+    display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);
+    color:var(--slate-soft);font-size:14.5px;transition:color .2s ease;
+  }
+  .steps-list li:last-child{border-bottom:none;}
+  .steps-list li .idx{font-family:var(--mono);font-size:12px;width:44px;flex:none;}
+  .steps-list li .chk{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line);flex:none;position:relative;}
+  .steps-list li.done{color:var(--ink);}
+  .steps-list li.done .chk{background:var(--teal);border-color:var(--teal);}
+  .steps-list li.active{color:var(--ink);font-weight:600;}
+  .steps-list li.active .chk{border-color:var(--teal);}
+  .steps-list li.active .chk::after{
+    content:"";position:absolute;inset:3px;border-radius:50%;background:var(--teal);animation:pulseDot 1s ease-in-out infinite;
+  }
+  .sys-msg{
+    font-family:var(--mono);font-size:12.5px;color:var(--teal-deep);margin-top:18px;min-height:18px;
+  }
+
+  /* step: results / report */
+  .report-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;margin-bottom:32px;}
+  .report-head h2{font-family:var(--serif);font-size:30px;font-weight:460;margin:0 0 6px;}
+  .report-head .case-id{font-family:var(--mono);font-size:13px;color:var(--slate-soft);}
+  .report-actions{display:flex;gap:10px;}
+  .btn-outline{
+    background:none;border:1px solid var(--line);border-radius:var(--radius-s);padding:10px 16px;
+    font-size:13.5px;font-weight:600;cursor:pointer;color:var(--ink);
+  }
+  .btn-outline:hover{border-color:var(--ink);}
+  .btn-dark{
+    background:var(--ink);color:#fff;border:none;border-radius:var(--radius-s);padding:10px 16px;
+    font-size:13.5px;font-weight:600;cursor:pointer;
+  }
+
+  .report-grid{display:grid;grid-template-columns:1.15fr 0.85fr;gap:48px;align-items:start;}
+  @media (max-width:960px){.report-grid{grid-template-columns:1fr;}}
+
+  .mode-tabs{display:flex;gap:4px;background:var(--paper-raised);border:1px solid var(--line);border-radius:100px;padding:4px;width:fit-content;margin-bottom:16px;}
+  .mode-tab{border:none;background:none;padding:7px 14px;border-radius:100px;font-size:13px;font-weight:600;color:var(--slate);cursor:pointer;}
+  .mode-tab.active{background:var(--ink);color:#fff;}
+
+  .compare-stage{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1/1;background:#0d0f10;box-shadow:var(--shadow-2);}
+  .compare-layer{position:absolute;inset:0;}
+  .compare-layer svg,.compare-layer img{width:100%;height:100%;object-fit:cover;}
+  .compare-handle{
+    position:absolute;top:0;bottom:0;width:2px;background:#fff;left:50%;cursor:ew-resize;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.15);
+  }
+  .compare-handle::after{
+    content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:var(--shadow-2);
+  }
+  .compare-handle::before{
+    content:"⇔";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:2;font-size:14px;color:var(--ink);
+  }
+  .compare-tag{
+    position:absolute;top:12px;font-family:var(--mono);font-size:11px;letter-spacing:0.02em;
+    background:rgba(13,15,16,0.72);color:#fff;padding:5px 9px;border-radius:5px;
+  }
+  .compare-tag.left{left:12px;}
+  .compare-tag.right{right:12px;}
+  .anno-box{
+    position:absolute;background:rgba(13,15,16,0.88);color:#fff;padding:8px 10px;border-radius:6px;
+    font-size:12px;max-width:160px;pointer-events:none;opacity:0;transition:opacity .18s ease;z-index:4;
+  }
+  .anno-box.show{opacity:1;}
+  .anno-box .t{font-weight:600;margin-bottom:2px;}
+  .anno-box .c{font-family:var(--mono);color:#8FE3CC;font-size:11px;}
+
+  .panel-block{border-top:1px solid var(--line);padding-top:24px;margin-top:24px;}
+  .panel-block:first-child{border-top:none;padding-top:0;margin-top:0;}
+  .panel-block h3{font-size:14px;text-transform:none;letter-spacing:0;margin:0 0 14px;font-weight:600;color:var(--slate);}
+
+  .interp-text{font-size:15px;line-height:1.65;margin:0 0 4px;}
+  .interp-text strong{font-weight:600;}
+
+  .risk-scale{position:relative;margin-top:26px;}
+  .risk-track{height:8px;border-radius:4px;background:linear-gradient(90deg, var(--success) 0 25%, var(--amber) 25% 55%, #C97A2E 55% 78%, var(--critical) 78% 100%);position:relative;}
+  .risk-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--slate-soft);margin-top:8px;font-family:var(--mono);}
+  .risk-marker{
+    position:absolute;top:-9px;width:2px;height:26px;background:var(--ink);
+  }
+  .risk-marker::after{
+    content:attr(data-label);position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:11px;font-weight:600;padding:4px 8px;border-radius:5px;white-space:nowrap;
+  }
+  .risk-marker::before{
+    content:"";position:absolute;top:-7px;left:50%;transform:translateX(-50%);
+    border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--ink);
+  }
+
+  .metric-row{display:flex;justify-content:space-between;font-size:13.5px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .metric-row:last-child{border-bottom:none;}
+  .metric-row .k{color:var(--slate);}
+  .metric-row .v{font-weight:600;font-family:var(--mono);font-size:13px;}
+
+  .pathway{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .pathway-node{
+    font-size:12px;font-weight:600;padding:7px 12px;border-radius:100px;border:1px solid var(--line);
+    color:var(--slate-soft);background:var(--paper-raised);
+  }
+  .pathway-node.current{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .pathway-arrow{color:var(--slate-soft);font-size:13px;}
+
+  .rec-text{font-size:14.5px;color:var(--slate);line-height:1.6;margin:10px 0 0;}
+
+  .findings-mini{margin-top:10px;}
+  .findings-mini .fitem{display:flex;gap:10px;align-items:flex-start;padding:9px 0;font-size:13.5px;cursor:pointer;}
+  .findings-mini .fitem:hover .ft{color:var(--teal-deep);}
+  .findings-mini .dotmark{width:8px;height:8px;border-radius:50%;background:#E8B45A;margin-top:5px;flex:none;}
+  .findings-mini .ft{font-weight:500;}
+  .findings-mini .fc{font-family:var(--mono);font-size:11.5px;color:var(--slate-soft);margin-left:auto;flex:none;}
+
+  .clinician-note{
+    width:100%;border:1px solid var(--line);border-radius:var(--radius-s);padding:12px;
+    font-family:var(--sans);font-size:13.5px;resize:vertical;min-height:70px;background:var(--paper-raised);
+  }
+  .new-screening-row{margin-top:36px;padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+  .new-screening-row p{margin:0;color:var(--slate-soft);font-size:13px;max-width:44ch;}
+
+  .disc-strip{
+    display:flex;gap:10px;align-items:flex-start;background:var(--amber-tint);border:1px solid #E3C99A;
+    border-radius:var(--radius-s);padding:12px 14px;font-size:13px;color:#6B4A17;margin-top:24px;
+  }
+  .disc-strip svg{flex:none;margin-top:2px;}
+
+  .sr-only{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+
+  /* =======================================================================
+     ROLE CHOOSER + PATIENT / DOCTOR EXPERIENCES
+     ======================================================================= */
+
+  .overlay-inner.wide{max-width:1520px;}
+
+  /* ---- role chooser ---- */
+  .chooser-wrap{text-align:center;max-width:640px;margin:20px auto 0;}
+  .chooser-kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;color:var(--slate-soft);text-transform:uppercase;margin-bottom:10px;}
+  .chooser-wrap h2{margin:0 0 10px;}
+  .chooser-wrap>p{color:var(--slate);margin:0 0 34px;}
+  .chooser-cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media (max-width:640px){.chooser-cards{grid-template-columns:1fr;}}
+  .chooser-card{
+    text-align:left;border:1px solid var(--line);background:var(--paper-raised);border-radius:var(--radius-m);
+    padding:26px 24px;cursor:pointer;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .chooser-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-2);border-color:var(--teal);}
+  .chooser-card .cc-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+  .chooser-card.patient .cc-icon{background:var(--teal-tint);}
+  .chooser-card.doctor .cc-icon{background:var(--amber-tint);}
+  .chooser-card h3{margin:0 0 6px;font-size:18px;}
+  .chooser-card p{margin:0;font-size:13.5px;color:var(--slate);line-height:1.6;}
+
+  /* ---- role pill (switch without resetting the case) ---- */
+  .role-pill-row{display:flex;justify-content:center;margin-bottom:28px;}
+  .role-pill{display:inline-flex;background:var(--paper-raised);border:1px solid var(--line);border-radius:100px;padding:4px;gap:4px;}
+  .role-pill button{border:none;background:none;padding:8px 18px;border-radius:100px;font-size:13px;font-weight:600;color:var(--slate);cursor:pointer;transition:background .15s ease,color .15s ease;}
+  .role-pill button.active{background:var(--teal-deep);color:#fff;}
+
+  /* =========================== PATIENT EXPERIENCE =========================== */
+  .patient-shell{max-width:760px;margin:0 auto;}
+  .p-hero{text-align:center;margin-bottom:36px;}
+  .p-hero h2{margin:0 0 10px;font-size:clamp(26px,3.4vw,34px);}
+  .p-hero p{color:var(--slate);max-width:46ch;margin:0 auto;font-size:15.5px;line-height:1.6;}
+
+  .p-latest{
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-m);
+    padding:26px;display:grid;grid-template-columns:180px 1fr;gap:24px;align-items:center;margin-bottom:26px;
+    box-shadow:var(--shadow-1);
+  }
+  @media (max-width:560px){.p-latest{grid-template-columns:1fr;text-align:center;}}
+  .p-latest .thumb{border-radius:50%;overflow:hidden;background:#0d0f10;box-shadow:var(--shadow-2);}
+  .p-latest-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--slate-soft);text-transform:uppercase;margin-bottom:6px;}
+  .p-status-chip{display:inline-flex;align-items:center;gap:7px;background:var(--teal-tint);color:var(--teal-deep);border-radius:100px;padding:5px 12px;font-size:12.5px;font-weight:600;margin-bottom:10px;}
+  .p-status-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--teal-deep);}
+  .p-latest .interp{font-size:15px;line-height:1.6;margin:0;}
+
+  .p-explain-cta{text-align:center;margin:32px 0;}
+  .btn-explain{
+    background:var(--teal-deep);color:#fff;border:none;border-radius:100px;padding:18px 34px;
+    font-size:16px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-2);transition:transform .15s ease;
+  }
+  .btn-explain:hover{transform:translateY(-2px);}
+
+  .p-layers{display:none;margin:30px 0 40px;}
+  .p-layers.show{display:block;}
+  .p-layer{
+    opacity:0;transform:translateY(10px);transition:opacity .5s ease, transform .5s ease;
+    border-left:3px solid var(--line);padding:6px 0 22px 22px;position:relative;
+  }
+  .p-layer.in{opacity:1;transform:translateY(0);}
+  .p-layer.active-line{border-left-color:var(--teal);}
+  .p-layer::before{content:'';position:absolute;left:-6px;top:6px;width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .p-layer.in::before{background:var(--teal);}
+  .p-layer .pl-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--slate-soft);text-transform:uppercase;margin-bottom:6px;}
+  .p-layer p{margin:0;font-size:15.5px;line-height:1.6;}
+
+  .p-viz-block{margin:36px 0;}
+  .p-viz-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .p-viz-head h3{margin:0;font-size:16px;}
+  .btn-showme{
+    background:var(--paper-raised);border:1px solid var(--teal);color:var(--teal-deep);border-radius:100px;
+    padding:9px 18px;font-size:13.5px;font-weight:600;cursor:pointer;
+  }
+  .btn-showme:hover{background:var(--teal-tint);}
+  .p-viz-stage{position:relative;border-radius:16px;overflow:hidden;max-width:420px;margin:0 auto;aspect-ratio:1/1;background:#0d0f10;box-shadow:var(--shadow-2);}
+  .p-viz-caption{text-align:center;color:var(--slate-soft);font-size:12.5px;margin-top:10px;}
+  .p-showme-caption{
+    text-align:center;font-size:14.5px;min-height:24px;margin-top:14px;color:var(--ink);font-weight:500;
+    opacity:0;transition:opacity .35s ease;
+  }
+  .p-showme-caption.show{opacity:1;}
+  .tech-toggle{text-align:center;margin-top:10px;}
+  .tech-toggle button{background:none;border:none;color:var(--slate-soft);font-size:12.5px;text-decoration:underline;cursor:pointer;}
+  .tech-panel{display:none;margin-top:14px;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-s);padding:14px 16px;font-family:var(--mono);font-size:12.5px;color:var(--slate);}
+  .tech-panel.show{display:block;}
+
+  .p-region-pop{
+    position:absolute;background:var(--ink);color:#fff;border-radius:var(--radius-s);padding:12px 14px;
+    font-size:13px;line-height:1.5;max-width:220px;box-shadow:var(--shadow-2);opacity:0;pointer-events:none;
+    transition:opacity .18s ease;z-index:5;
+  }
+  .p-region-pop.show{opacity:1;pointer-events:auto;}
+  .p-region-pop b{display:block;margin-bottom:4px;}
+  .p-region-pop .why{color:var(--teal-tint);margin-top:6px;display:block;font-size:12px;}
+
+  .p-tabs{display:flex;gap:4px;background:var(--paper-raised);border:1px solid var(--line);border-radius:100px;padding:4px;width:fit-content;margin:40px auto 16px;}
+  .p-tabs button{border:none;background:none;padding:9px 18px;border-radius:100px;font-size:13px;font-weight:600;color:var(--slate);cursor:pointer;}
+  .p-tabs button.active{background:var(--teal-deep);color:#fff;}
+  .p-tab-panel{display:none;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-m);padding:22px 24px;}
+  .p-tab-panel.show{display:block;}
+  .p-tab-panel p{margin:0 0 10px;font-size:14.5px;line-height:1.65;}
+  .p-tab-panel p:last-child{margin-bottom:0;}
+
+  .p-journey{margin:48px 0;}
+  .p-journey h3{text-align:center;margin:0 0 28px;}
+  .p-journey-path{display:flex;flex-direction:column;gap:0;max-width:380px;margin:0 auto;}
+  .pj-stage{display:flex;align-items:center;gap:14px;padding:10px 0;position:relative;}
+  .pj-stage:not(:last-child)::after{content:'';position:absolute;left:13px;top:38px;width:2px;height:calc(100% - 14px);background:var(--line);}
+  .pj-stage.done:not(:last-child)::after{background:var(--teal);}
+  .pj-dot{width:28px;height:28px;border-radius:50%;background:var(--paper-raised);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none;font-size:12px;color:var(--slate-soft);}
+  .pj-stage.done .pj-dot{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff;}
+  .pj-stage.current .pj-dot{border-color:var(--teal);color:var(--teal-deep);}
+  .pj-label{font-size:14.5px;font-weight:500;}
+  .pj-stage.done .pj-label{color:var(--ink);}
+  .pj-stage:not(.done) .pj-label{color:var(--slate-soft);}
+
+  .p-next{background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-m);padding:24px 26px;margin:40px 0;}
+  .p-next h3{margin:0 0 14px;font-size:16px;}
+
+  .p-history{margin:44px 0;}
+  .p-history h3{margin:0 0 16px;}
+  .p-hist-year{font-family:var(--mono);font-size:12px;color:var(--slate-soft);margin:14px 0 6px;}
+  .p-hist-item{
+    display:flex;align-items:center;gap:14px;padding:12px 4px;border-radius:var(--radius-s);cursor:pointer;transition:background .15s ease;
+  }
+  .p-hist-item:hover{background:var(--paper-raised);}
+  .p-hist-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);flex:none;}
+  .p-hist-item .month{font-weight:600;font-size:14.5px;min-width:90px;}
+  .p-hist-item .desc{color:var(--slate-soft);font-size:13px;}
+
+  .p-compare-block{display:none;margin-top:18px;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-m);padding:22px;}
+  .p-compare-block.show{display:block;}
+  .p-compare-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--slate-soft);text-transform:uppercase;margin-bottom:10px;}
+  .p-compare-stage{position:relative;border-radius:12px;overflow:hidden;max-width:360px;margin:0 auto;aspect-ratio:1/1;background:#0d0f10;}
+  .p-compare-notes{margin-top:16px;font-size:13.5px;color:var(--slate);line-height:1.6;}
+
+  .p-privacy{text-align:center;color:var(--slate-soft);font-size:12.5px;margin:36px 0 8px;display:flex;align-items:center;justify-content:center;gap:6px;}
+
+  /* =========================== DOCTOR EXPERIENCE =========================== */
+  .doctor-shell{display:grid;grid-template-columns:240px 1fr 320px;gap:0;background:var(--ink);color:#EDEEEC;border-radius:var(--radius-m);overflow:hidden;min-height:640px;box-shadow:var(--shadow-2);}
+  @media (max-width:1180px){.doctor-shell{grid-template-columns:1fr;}}
+
+  .dw-col{padding:18px;overflow-y:auto;}
+  .dw-left{border-right:1px solid rgba(255,255,255,0.08);max-height:720px;}
+  .dw-right{border-left:1px solid rgba(255,255,255,0.08);max-height:720px;}
+  @media (max-width:1180px){.dw-left,.dw-right{max-height:none;border:none;border-top:1px solid rgba(255,255,255,0.08);}}
+
+  .dw-section-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#8D9198;margin:0 0 12px;}
+  .dw-search{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#EDEEEC;border-radius:var(--radius-s);padding:8px 10px;font-size:13px;margin-bottom:10px;}
+  .dw-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .dw-filters button{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#C7C9CC;border-radius:100px;padding:4px 10px;font-size:11.5px;cursor:pointer;}
+  .dw-filters button.active{background:#EDEEEC;color:var(--ink);border-color:#EDEEEC;}
+
+  .case-card{
+    border:1px solid rgba(255,255,255,0.09);border-radius:var(--radius-s);padding:12px 13px;margin-bottom:8px;cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .case-card:hover{border-color:rgba(255,255,255,0.3);}
+  .case-card.active{background:rgba(255,255,255,0.07);border-color:#EDEEEC;}
+  .case-card .cid{font-family:var(--mono);font-size:12.5px;font-weight:600;}
+  .case-card .crow{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .case-status{font-size:10.5px;padding:2px 8px;border-radius:100px;font-weight:600;letter-spacing:.02em;}
+  .case-status.ai{background:#2C3A44;color:#9FD3E8;}
+  .case-status.clin{background:#463A22;color:#F0C878;}
+  .case-status.done{background:#22392C;color:#8FD3A8;}
+  .case-risk{font-size:11px;color:#9799A0;}
+  .case-risk.high{color:#E9877B;}
+  .case-risk.moderate{color:#F0C878;}
+  .case-risk.low{color:#8FD3A8;}
+  .case-quality-flag{font-size:10.5px;color:#E9877B;margin-top:5px;}
+
+  .dw-center{background:#0B0C0D;padding:20px;}
+  .dc-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .dc-head .case-id{font-family:var(--mono);font-size:14px;color:#EDEEEC;font-weight:600;}
+  .dc-head .case-sub{font-size:12px;color:#8D9198;margin-top:3px;}
+  .dc-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .dc-toolbar button{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#C7C9CC;border-radius:var(--radius-s);padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;}
+  .dc-toolbar button.active{background:#EDEEEC;color:var(--ink);border-color:#EDEEEC;}
+  .dc-tools-right{margin-left:auto;display:flex;gap:6px;}
+  .dc-tools-right button{width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;}
+
+  .dc-stage-wrap{position:relative;border-radius:var(--radius-m);overflow:hidden;background:#050505;aspect-ratio:1/1;max-width:560px;margin:0 auto;transition:transform .2s ease;}
+  .dc-quality-gate{
+    display:none;background:#2A1712;border:1px solid #6B3A2A;border-radius:var(--radius-m);padding:22px 24px;max-width:560px;margin:0 auto;
+  }
+  .dc-quality-gate.show{display:block;}
+  .dc-quality-gate h4{margin:0 0 10px;color:#E9877B;font-size:15px;}
+  .dc-quality-gate ul{margin:10px 0;padding-left:18px;color:#C7C9CC;font-size:13px;line-height:1.7;}
+  .dc-quality-gate .qg-cta{color:#EDEEEC;font-size:13.5px;margin-top:8px;font-weight:600;}
+
+  .dc-region-flyout{
+    position:absolute;background:#161819;border:1px solid rgba(255,255,255,0.14);color:#EDEEEC;border-radius:var(--radius-s);
+    padding:13px 15px;font-size:12.5px;line-height:1.6;max-width:230px;box-shadow:0 12px 30px rgba(0,0,0,0.5);
+    opacity:0;pointer-events:none;transition:opacity .15s ease;z-index:6;
+  }
+  .dc-region-flyout.show{opacity:1;pointer-events:auto;}
+  .dc-region-flyout b{display:block;margin-bottom:4px;color:#fff;}
+  .dc-region-flyout ol{margin:8px 0 0;padding-left:16px;color:#9FD3E8;}
+  .dc-region-flyout .why-btn{background:rgba(255,255,255,0.1);border:none;color:#EDEEEC;border-radius:100px;padding:4px 10px;font-size:11px;margin-top:8px;cursor:pointer;}
+
+  .dc-confidence{max-width:560px;margin:18px auto 0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:var(--radius-s);padding:14px 16px;}
+  .dc-conf-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8D9198;margin-bottom:8px;}
+  .dc-conf-track{position:relative;height:4px;background:rgba(255,255,255,0.14);border-radius:2px;margin:10px 0 6px;}
+  .dc-conf-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#4F8C86,#9FD3E8);border-radius:2px;}
+  .dc-conf-marker{position:absolute;top:-4px;width:12px;height:12px;border-radius:50%;background:#EDEEEC;border:2px solid #0B0C0D;transform:translateX(-50%);}
+  .dc-conf-ends{display:flex;justify-content:space-between;font-size:10.5px;color:#8D9198;}
+  .dc-conf-value{font-family:var(--mono);font-size:20px;font-weight:600;color:#EDEEEC;margin-top:4px;}
+  .dc-conf-meta{display:flex;gap:18px;margin-top:12px;font-size:11.5px;color:#C7C9CC;flex-wrap:wrap;}
+  .dc-conf-meta b{color:#EDEEEC;}
+
+  .dw-right{background:#101112;}
+  .ai-brief-title{font-size:14px;font-weight:600;color:#EDEEEC;margin-bottom:14px;}
+  .ab-section{border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;margin-top:14px;}
+  .ab-section:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+  .ab-section h4{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8D9198;margin:0 0 8px;font-weight:600;}
+  .ab-section p{margin:0;font-size:13px;line-height:1.6;color:#DADBD8;}
+
+  .wts-item{border:1px solid rgba(255,255,255,0.09);border-radius:var(--radius-s);padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:12.5px;color:#DADBD8;transition:border-color .15s ease;}
+  .wts-item:hover, .wts-item.active{border-color:#9FD3E8;color:#EDEEEC;}
+  .wts-item .wi-idx{font-family:var(--mono);color:#8D9198;margin-right:6px;}
+
+  .clin-review-opts{display:flex;flex-direction:column;gap:8px;margin:10px 0 12px;}
+  .clin-review-opts label{display:flex;align-items:center;gap:8px;font-size:13px;color:#DADBD8;cursor:pointer;}
+  .clin-review-opts input{accent-color:#4F8C86;}
+  .clin-note{width:100%;min-height:64px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#EDEEEC;border-radius:var(--radius-s);padding:9px 10px;font-size:12.5px;font-family:inherit;resize:vertical;}
+  .btn-mark-reviewed{width:100%;background:#4F8C86;border:none;color:#fff;border-radius:var(--radius-s);padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;}
+  .btn-mark-reviewed:hover{background:#3E706B;}
+  .review-confirmed{display:none;text-align:center;font-size:12.5px;color:#8FD3A8;margin-top:10px;}
+  .review-confirmed.show{display:block;}
+
+  .av-c-row{display:flex;align-items:center;gap:10px;margin:14px 0;}
+  .av-c-col{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:var(--radius-s);padding:12px;}
+  .av-c-col h5{margin:0 0 8px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#8D9198;}
+  .av-c-col ul{margin:0;padding-left:16px;font-size:12px;color:#DADBD8;line-height:1.7;}
+  .av-arrow{color:#8D9198;font-size:16px;}
+
+  .dc-report-btn-row{display:flex;gap:10px;margin-top:16px;}
+  .dc-report-preview{display:none;background:#EDEEEC;color:var(--ink);border-radius:var(--radius-m);padding:22px 24px;margin-top:16px;font-size:13px;}
+  .dc-report-preview.show{display:block;}
+  .dc-report-preview h4{margin:0 0 12px;}
+  .dc-report-preview .rp-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;}
+
+  .trace-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,6,0.88);z-index:120;align-items:center;justify-content:center;padding:24px;}
+  .trace-overlay.show{display:flex;}
+  .trace-card{background:#101112;border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-m);max-width:760px;width:100%;padding:28px;color:#EDEEEC;}
+  .trace-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .trace-head h3{margin:0;font-size:16px;}
+  .trace-close{background:none;border:none;color:#8D9198;cursor:pointer;font-size:14px;}
+  .trace-body{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center;}
+  @media (max-width:600px){.trace-body{grid-template-columns:1fr;}}
+  .trace-stage-img{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1/1;background:#050505;}
+  .trace-steps{display:flex;flex-direction:column;gap:0;}
+  .trace-step{opacity:.25;transition:opacity .4s ease;padding:10px 0 10px 18px;border-left:2px solid rgba(255,255,255,0.12);position:relative;font-size:13.5px;}
+  .trace-step::before{content:'';position:absolute;left:-5px;top:14px;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.2);}
+  .trace-step.in{opacity:1;}
+  .trace-step.in::before{background:#9FD3E8;}
+  .trace-step b{display:block;font-size:12px;color:#8D9198;letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px;font-weight:600;}
+
+  .fita-flow{display:flex;flex-wrap:wrap;gap:0;align-items:center;justify-content:center;margin-top:8px;}
+  .fita-node{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);border-radius:var(--radius-s);padding:8px 14px;font-size:11.5px;color:#DADBD8;font-weight:600;}
+  .fita-arrow{color:#8D9198;padding:0 8px;font-size:13px;}
+
+  .dc-journey{max-width:560px;margin:20px auto 0;}
+  .dc-journey-row{display:flex;justify-content:space-between;position:relative;padding:0 4px;}
+  .dc-journey-row::before{content:'';position:absolute;top:5px;left:14px;right:14px;height:1px;background:rgba(255,255,255,0.14);}
+  .dcj-item{position:relative;text-align:center;flex:1;}
+  .dcj-item .dot{width:11px;height:11px;border-radius:50%;background:#4F8C86;margin:0 auto 6px;position:relative;z-index:1;}
+  .dcj-item .lbl{font-size:10px;color:#C7C9CC;}
+  .dcj-item .ts{font-size:9.5px;color:#8D9198;font-family:var(--mono);}
+
+  .doctor-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .doctor-topbar-actions{display:flex;gap:8px;}
+  .doctor-topbar-actions button{background:var(--paper-raised);border:1px solid var(--line);color:var(--ink);border-radius:var(--radius-s);padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="siteNav">
+  <div class="nav-inner">
+    <a href="#top" class="brand" aria-label="Reticle home">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="#16181A" stroke-width="1.4"/>
+        <circle cx="12" cy="12" r="3.2" fill="#0E5C55"/>
+        <circle cx="12" cy="12" r="6" stroke="#0E5C55" stroke-width="1" stroke-dasharray="2 2"/>
+      </svg>
+      Reticle
+    </a>
+    <nav aria-label="Primary">
+      <ul class="nav-links">
+        <li><a href="#product">Product</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#explainability">AI Explainability</a></li>
+        <li><a href="#clinicians">For Clinicians</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+    </nav>
+    <button class="nav-cta" id="navTryBtn">Try screening</button>
+    <button class="nav-toggle" aria-label="Open menu"><span></span></button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="product">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="status-pill"><span class="status-dot pulse"></span> AI Vision Engine — analysis ready</span>
+        <h1 class="display">See what the retina is telling you.</h1>
+        <p class="hero-sub">Reticle turns a single retinal photograph into an explainable AI screening read — built for the clinics and community health workers doing this work every day, not the labs studying it.</p>
+        <div class="cta-row">
+          <button class="btn-primary" id="heroAnalyzeBtn">Analyze a retina</button>
+          <button class="btn-link" id="heroHowBtn">See how it works</button>
+        </div>
+        <div class="stat-row">
+          <span><strong>94.2%</strong> sensitivity in validation</span>
+          <span>Read time <strong>under 2s</strong></span>
+          <span>Every finding <strong>comes with a reason</strong></span>
+        </div>
+      </div>
+
+      <div class="retina-panel">
+        <div class="retina-panel-head">
+          <span class="tag">CASE PREVIEW · RT-2048</span>
+          <span class="tag" id="heroModeTag">HEATMAP OFF</span>
+        </div>
+        <div class="retina-stage" id="heroRetinaStage">
+          <!-- SVG built by script -->
+          <div class="hover-label" id="heroHoverLabel"></div>
+        </div>
+        <div class="retina-panel-foot">
+          <span>Hover the image to inspect detected regions</span>
+          <span id="heroQualityTag">Image quality — good</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how-it-works">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>From photograph to clinical judgment, in six visible steps.</h2>
+        <p>Reticle doesn't hide the reasoning behind a single confidence number. Each screening moves through the same visible pipeline, so the person reading the result can see exactly how the AI got there.</p>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">01</span><span class="pipeline-name">Capture</span></div>
+          <div class="pipeline-line"></div>
+          <p class="pipeline-desc">A retinal photograph is taken with a standard or handheld fundus camera.</p>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">02</span><span class="pipeline-name">Vision</span></div>
+          <div class="pipeline-line"></div>
+          <p class="pipeline-desc">The model maps retinal structures — vessels, disc, macula — before looking for disease.</p>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">03</span><span class="pipeline-name">Understand</span></div>
+          <div class="pipeline-line"></div>
+          <p class="pipeline-desc">Regions that deviate from healthy retinal patterns are located and scored.</p>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">04</span><span class="pipeline-name">Explain</span></div>
+          <div class="pipeline-line"></div>
+          <p class="pipeline-desc">Each detected region is turned into a plain-language finding, not just a number.</p>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">05</span><span class="pipeline-name">Act</span></div>
+          <p class="pipeline-desc">Findings are placed on a risk scale with a clear, specific next step.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============ EXPLAINABILITY PREVIEW ============ -->
+  <section id="explainability">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>What the AI saw.</h2>
+        <p>Instead of "diabetic retinopathy, 87%", Reticle shows the specific patterns behind that number, each one tied to a location on the image.</p>
+      </div>
+      <div class="explain-grid">
+        <div>
+          <div class="evidence-item active" data-marker="0">
+            <span class="evidence-index">01</span>
+            <div class="evidence-body">
+              <h4>Microvascular change, superior arcade</h4>
+              <p>Small pockets of vessel dilation consistent with early-stage microaneurysms.</p>
+              <span class="evidence-conf">confidence 0.87</span>
+            </div>
+          </div>
+          <div class="evidence-item" data-marker="1">
+            <span class="evidence-index">02</span>
+            <div class="evidence-body">
+              <h4>Localized abnormal region, temporal periphery</h4>
+              <p>A cluster of pixel-level irregularities outside the typical healthy-retina range.</p>
+              <span class="evidence-conf">confidence 0.74</span>
+            </div>
+          </div>
+          <div class="evidence-item" data-marker="2">
+            <span class="evidence-index">03</span>
+            <div class="evidence-body">
+              <h4>Macular area characteristics</h4>
+              <p>Texture around the macula was scored separately, since changes here carry more weight.</p>
+              <span class="evidence-conf">confidence 0.61</span>
+            </div>
+          </div>
+          <div class="evidence-item" data-marker="3">
+            <span class="evidence-index">04</span>
+            <div class="evidence-body">
+              <h4>Vessel pattern, inferior arcade</h4>
+              <p>Minor tortuosity noted; contributes a small amount to the overall risk score.</p>
+              <span class="evidence-conf">confidence 0.52</span>
+            </div>
+          </div>
+        </div>
+        <div class="retina-panel" style="margin-top:2px;">
+          <div class="retina-panel-head">
+            <span class="tag">AI INTERPRETATION</span>
+            <span class="tag">4 findings</span>
+          </div>
+          <div class="retina-stage" id="explainStage">
+            <div class="hover-label" id="explainHoverLabel"></div>
+          </div>
+          <div class="retina-panel-foot">
+            <span>Click a finding on the left to locate it</span>
+            <span>Overall confidence — 0.87</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============ FOR CLINICIANS ============ -->
+  <section id="clinicians" class="tight">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Built around the screening workflow, not a dashboard.</h2>
+        <p>A case moves through the same steps a screening program already follows — Reticle makes each one visible and reviewable.</p>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">—</span><span class="pipeline-name">Image captured</span></div>
+          <div class="pipeline-line"></div>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">—</span><span class="pipeline-name">Quality verified</span></div>
+          <div class="pipeline-line"></div>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">—</span><span class="pipeline-name">AI analysis</span></div>
+          <div class="pipeline-line"></div>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">—</span><span class="pipeline-name">Flagged for review</span></div>
+          <div class="pipeline-line"></div>
+        </div>
+        <div class="pipeline-step">
+          <div class="pipeline-node"><span class="pipeline-index">—</span><span class="pipeline-name">Clinician follow-up</span></div>
+        </div>
+      </div>
+      <p style="color:var(--slate);font-size:14.5px;margin-top:36px;max-width:60ch;">Open a screening below to see the full case report a clinician reviews — the same view a community health worker would export and attach to a referral.</p>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============ TECHNOLOGY ============ -->
+  <section id="technology">
+    <div class="wrap" style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;">
+      <div>
+        <div class="section-head" style="margin-bottom:32px;">
+          <h2>A pipeline you can inspect, not a black box.</h2>
+          <p>Each stage of the architecture produces an intermediate output that feeds the explanation shown to the reader — nothing is inferred after the fact.</p>
+        </div>
+      </div>
+      <div>
+        <div class="arch" id="archFlow">
+          <div class="arch-node"><span class="n">01</span><span class="t">Retinal image</span></div>
+          <div class="arch-connector"><span class="arch-flow-dot" style="animation-delay:0s;"></span></div>
+          <div class="arch-node"><span class="n">02</span><span class="t">Preprocessing</span></div>
+          <div class="arch-connector"><span class="arch-flow-dot" style="animation-delay:0.4s;"></span></div>
+          <div class="arch-node"><span class="n">03</span><span class="t">Deep learning model</span></div>
+          <div class="arch-connector"><span class="arch-flow-dot" style="animation-delay:0.8s;"></span></div>
+          <div class="arch-node"><span class="n">04</span><span class="t">Feature extraction</span></div>
+          <div class="arch-connector"><span class="arch-flow-dot" style="animation-delay:1.2s;"></span></div>
+          <div class="arch-node"><span class="n">05</span><span class="t">Disease classification</span></div>
+          <div class="arch-connector"><span class="arch-flow-dot" style="animation-delay:1.6s;"></span></div>
+          <div class="arch-node"><span class="n">06</span><span class="t">Explainability engine</span></div>
+          <div class="arch-connector"><span class="arch-flow-dot" style="animation-delay:2.0s;"></span></div>
+          <div class="arch-node active"><span class="n">07</span><span class="t">Clinical interface</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============ TRUST & SAFETY ============ -->
+  <section id="trust">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>AI-assisted means a person always confirms.</h2>
+        <p>Reticle is designed to support a screening decision, not to make one on its own.</p>
+      </div>
+      <div class="trust-grid">
+        <div class="trust-cell">
+          <h4>Human-in-the-loop</h4>
+          <p>Every flagged case routes to a clinician for review before any action is taken.</p>
+        </div>
+        <div class="trust-cell">
+          <h4>Explainable by default</h4>
+          <p>Findings are shown with the region and reasoning behind them — never a bare percentage.</p>
+        </div>
+        <div class="trust-cell">
+          <h4>Image quality checks</h4>
+          <p>Poor-quality captures are flagged before analysis, not silently scored anyway.</p>
+        </div>
+        <div class="trust-cell">
+          <h4>Privacy-conscious</h4>
+          <p>Case data stays scoped to the screening workflow it was collected for.</p>
+        </div>
+        <div class="trust-cell">
+          <h4>Clinical confirmation required</h4>
+          <p>Every report states plainly that AI screening is not a diagnosis.</p>
+        </div>
+        <div class="trust-cell">
+          <h4>Built for real conditions</h4>
+          <p>Designed to hold up on the camera equipment and image quality found in the field, not just a lab dataset.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============ ABOUT ============ -->
+  <section id="about" class="tight">
+    <div class="wrap" style="max-width:720px;">
+      <div class="section-head" style="margin-bottom:20px;">
+        <h2>About this project</h2>
+      </div>
+      <p style="color:var(--slate);font-size:15.5px;line-height:1.7;">Reticle is a prototype built for the Smart India Hackathon, exploring how AI-assisted retinal screening can be made accessible and explainable for community health settings. The result you see in the demo below runs entirely in this browser on sample and mock data — a production version would connect the same interface to a trained model and a real screening pipeline.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="disclaimer-strip">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1L15 14H1L8 1Z" stroke="#A8701F" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 6V9.5" stroke="#A8701F" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.6" r="0.9" fill="#A8701F"/></svg>
+      <span>Reticle provides AI-assisted screening support. It does not diagnose disease and does not replace evaluation by a qualified clinician.</span>
+    </div>
+    <div class="footer-inner">
+      <p>© 2026 Reticle — a Smart India Hackathon prototype.</p>
+      <ul class="footer-links">
+        <li><a href="#product">Product</a></li>
+        <li><a href="#how-it-works">How it works</a></li>
+        <li><a href="#trust">Trust &amp; safety</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ DEMO FLOATING BUTTON ============ -->
+<button class="btn-dark" id="demoCaseBtn" style="position:fixed;bottom:22px;right:22px;z-index:80;box-shadow:var(--shadow-2);border-radius:100px;padding:12px 20px;">▶ Demo case</button>
+
+<!-- ============ ANALYSIS OVERLAY ============ -->
+<div class="overlay" id="analysisOverlay" role="dialog" aria-modal="true" aria-label="Retinal analysis workspace">
+  <div class="overlay-bar">
+    <span class="title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="#16181A" stroke-width="1.4"/><circle cx="12" cy="12" r="3" fill="#0E5C55"/></svg>
+      Screening workspace
+    </span>
+    <button class="overlay-close" id="overlayCloseBtn" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1L13 13M13 1L1 13" stroke="#16181A" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div class="overlay-body">
+    <div class="overlay-inner">
+
+      <!-- STAGE 1: UPLOAD -->
+      <div class="stage" id="stageUpload">
+        <div class="upload-stage">
+          <div class="upload-kicker">STEP 01 · IMAGE INTAKE</div>
+          <h2>Bring in a retinal image.</h2>
+          <p>Upload a fundus photograph to begin. You can also drop in a sample case if a capture isn't on hand yet.</p>
+
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload retinal image">
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true"><path d="M17 22V6M17 6L11 12M17 6L23 12" stroke="#9799A0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 24V27C5 28.1 5.9 29 7 29H27C28.1 29 29 28.1 29 27V24" stroke="#9799A0" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <div class="dz-title">Drag and drop a retinal image</div>
+            <div class="dz-sub">JPG or PNG, ideally 1000px or larger</div>
+            <div class="dz-or">or</div>
+            <button class="dz-browse" id="browseBtn" type="button">Browse files</button>
+            <input type="file" id="fileInput" accept="image/*" class="sr-only" />
+          </div>
+
+          <div class="preview-card" id="previewCard">
+            <div class="preview-top">
+              <div class="preview-thumb" id="previewThumb"></div>
+              <div class="preview-meta">
+                <div class="fname" id="previewFilename">sample_fundus_04.jpg</div>
+                <div class="qc-row"><span class="qc-label">Sharpness</span><span class="qc-bar"><span class="qc-fill" style="width:88%;"></span></span><span class="qc-value">0.88</span></div>
+                <div class="qc-row"><span class="qc-label">Illumination</span><span class="qc-bar"><span class="qc-fill" style="width:81%;"></span></span><span class="qc-value">0.81</span></div>
+                <div class="qc-row"><span class="qc-label">Field of view</span><span class="qc-bar"><span class="qc-fill" style="width:92%;"></span></span><span class="qc-value">0.92</span></div>
+              </div>
+            </div>
+            <div class="preview-actions">
+              <button class="link-btn" id="changeImageBtn">Choose a different image</button>
+              <button class="btn-primary" id="startAnalysisBtn">Start AI analysis</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 2: SCANNING -->
+      <div class="stage" id="stageScan" style="display:none;">
+        <div class="upload-kicker" style="text-align:center;">ANALYSIS IN PROGRESS</div>
+        <div class="scan-stage">
+          <div class="scan-visual" id="scanVisual">
+            <div class="scan-line"></div>
+          </div>
+          <div>
+            <ol class="steps-list" id="stepsList">
+              <li data-step="0"><span class="idx">01</span><span class="chk"></span><span>Image received</span></li>
+              <li data-step="1"><span class="idx">02</span><span class="chk"></span><span>Image quality check</span></li>
+              <li data-step="2"><span class="idx">03</span><span class="chk"></span><span>Retinal structure analysis</span></li>
+              <li data-step="3"><span class="idx">04</span><span class="chk"></span><span>Abnormality detection</span></li>
+              <li data-step="4"><span class="idx">05</span><span class="chk"></span><span>Explainability generation</span></li>
+              <li data-step="5"><span class="idx">06</span><span class="chk"></span><span>Result ready</span></li>
+            </ol>
+            <div class="sys-msg" id="sysMsg">Checking image quality…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 3: ROLE CHOOSER + PATIENT / DOCTOR EXPERIENCES -->
+      <div class="stage" id="stageResult" style="display:none;">
+
+        <!-- ROLE CHOOSER -->
+        <div id="roleChooser">
+          <div class="chooser-wrap">
+            <div class="chooser-kicker">STEP 06 · RESULT READY</div>
+            <h2>How would you like to see this case?</h2>
+            <p>The same screening, read two different ways — pick an experience to continue.</p>
+            <div class="chooser-cards">
+              <div class="chooser-card patient" id="chooseCardPatient" tabindex="0" role="button">
+                <div class="cc-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M2 12C4 7 8 4.5 12 4.5S20 7 22 12C20 17 16 19.5 12 19.5S4 17 2 12Z" stroke="#0A423D" stroke-width="1.5"/><circle cx="12" cy="12" r="3.2" stroke="#0A423D" stroke-width="1.5"/></svg></div>
+                <h3>I'm the patient</h3>
+                <p>Understand your eye health in plain language — what was found, what it may mean, and what to do next.</p>
+              </div>
+              <div class="chooser-card doctor" id="chooseCardDoctor" tabindex="0" role="button">
+                <div class="cc-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M9 3v4M15 3v4M5 8h14v10a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V8Z" stroke="#A8701F" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 13h6M12 10v6" stroke="#A8701F" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                <h3>I'm the clinician</h3>
+                <p>Investigate the case: evidence, confidence, image-level detail, and a full review workflow.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ PATIENT EXPERIENCE ============ -->
+        <div id="patientExperience" style="display:none;">
+          <div class="role-pill-row" style="justify-content:space-between;max-width:760px;margin-left:auto;margin-right:auto;">
+            <div class="role-pill">
+              <button class="active" id="pillPatientBtn">Patient view</button>
+              <button id="pillDoctorFromPatientBtn">Clinician view</button>
+            </div>
+            <button class="link-btn" id="newScreeningFromPatientBtn" style="align-self:center;">New screening</button>
+          </div>
+
+          <div class="patient-shell">
+            <div class="p-hero">
+              <h2>Your eye health, explained simply.</h2>
+              <p>Understand your retinal screening results without needing to understand medical jargon.</p>
+            </div>
+
+            <div class="p-latest">
+              <div class="thumb" id="pLatestThumb"></div>
+              <div>
+                <div class="p-latest-kicker">Latest screening · <span id="pLatestDate">Sep 4, 2026</span></div>
+                <div class="p-status-chip"><span class="dot"></span>AI-assisted screening complete</div>
+                <p class="interp">Your screening shows some areas that may need further clinical review.</p>
+              </div>
+            </div>
+
+            <div class="p-explain-cta">
+              <button class="btn-explain" id="explainResultBtn">Explain my result</button>
+            </div>
+
+            <div class="p-layers" id="pLayers">
+              <div class="p-layer" data-layer="0">
+                <div class="pl-kicker">What we found</div>
+                <p>Some changes were detected in the retinal image.</p>
+              </div>
+              <div class="p-layer" data-layer="1">
+                <div class="pl-kicker">What it may mean</div>
+                <p>These patterns can sometimes be associated with retinal conditions.</p>
+              </div>
+              <div class="p-layer" data-layer="2">
+                <div class="pl-kicker">What to do next</div>
+                <p>Consider discussing the result with an eye-care professional.</p>
+              </div>
+            </div>
+
+            <div class="p-viz-block">
+              <div class="p-viz-head">
+                <h3>See what the AI saw</h3>
+                <button class="btn-showme" id="showMeWhyBtn">Show me why</button>
+              </div>
+              <div class="p-viz-stage" id="pVizStage"></div>
+              <div class="p-showme-caption" id="pShowMeCaption"></div>
+              <div class="p-viz-caption">Tap a highlighted area to learn what it means.</div>
+              <div class="tech-toggle"><button id="pTechToggleBtn">Technical details</button></div>
+              <div class="tech-panel" id="pTechPanel"></div>
+            </div>
+
+            <div class="p-tabs" id="pResultTabs">
+              <button class="active" data-ptab="simple">Simple</button>
+              <button data-ptab="detailed">Detailed</button>
+              <button data-ptab="technical">Technical</button>
+            </div>
+            <div class="p-tab-panel show" id="pTabSimple">
+              <p>Your screening shows a few small changes in the retina. On their own, this doesn't tell you exactly what's going on — an eye-care professional can look closer and explain what it means for you.</p>
+            </div>
+            <div class="p-tab-panel" id="pTabDetailed">
+              <p>The AI reviewed your retinal image and flagged <span id="pDetailedCount">4</span> areas that differ from a typical healthy pattern, mostly around the blood vessels and the central part of the retina. Patterns like these are sometimes seen in early retinal conditions, which is why a clinical review is recommended.</p>
+            </div>
+            <div class="p-tab-panel" id="pTabTechnical">
+              <div class="metric-row"><span class="k">AI confidence</span><span class="v" id="pTechConfidence">0.87</span></div>
+              <div class="metric-row"><span class="k">Image quality</span><span class="v" id="pTechQuality">Good</span></div>
+              <div class="metric-row"><span class="k">Indicators detected</span><span class="v" id="pTechCount">4</span></div>
+              <div class="metric-row"><span class="k">Model</span><span class="v">Reticle-Fundus v0.9 (demo)</span></div>
+            </div>
+
+            <div class="p-journey">
+              <h3>Your screening journey</h3>
+              <div class="p-journey-path" id="pJourneyPath"></div>
+            </div>
+
+            <div class="p-next">
+              <h3>What happens next?</h3>
+              <p style="margin:0 0 12px;color:var(--slate);font-size:14px;">AI-assisted screening result — clinical evaluation is recommended where appropriate.</p>
+              <div class="pathway">
+                <span class="pathway-node">AI screening</span><span class="pathway-arrow">→</span>
+                <span class="pathway-node current">Clinician review</span><span class="pathway-arrow">→</span>
+                <span class="pathway-node">Follow-up if needed</span>
+              </div>
+            </div>
+
+            <div class="p-history">
+              <h3>Screening history</h3>
+              <div id="pHistoryList"></div>
+            </div>
+
+            <div class="p-compare-block" id="pCompareBlock">
+              <div class="p-compare-labels"><span>Previous screening</span><span>Current screening</span></div>
+              <div class="p-compare-stage" id="pCompareStage"></div>
+              <div class="p-compare-notes">
+                <strong>Visual comparison:</strong> slide to compare your previous and current screening images.<br>
+                <strong>Changes to discuss with your clinician:</strong> the AI noted a small change in the highlighted region between visits. This is not a diagnosis of progression — bring it up at your next visit.
+              </div>
+            </div>
+
+            <div class="p-privacy">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1.5 13.5 3.8v3.7c0 3.6-2.3 6.6-5.5 7.7-3.2-1.1-5.5-4.1-5.5-7.7V3.8L8 1.5Z" stroke="#9799A0" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              Your health information is protected.
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ DOCTOR EXPERIENCE ============ -->
+        <div id="doctorExperience" style="display:none;">
+          <div class="doctor-topbar">
+            <div class="role-pill">
+              <button id="pillPatientFromDoctorBtn">Patient view</button>
+              <button class="active" id="pillDoctorBtn">Clinician view</button>
+            </div>
+            <div class="doctor-topbar-actions">
+              <button id="traceDecisionBtn">Trace the decision</button>
+              <button id="generateReportBtn">Generate report</button>
+              <button id="newScreeningFromDoctorBtn">New screening</button>
+            </div>
+          </div>
+
+          <div class="doctor-shell">
+            <!-- LEFT: CASE STREAM -->
+            <div class="dw-col dw-left">
+              <div class="dw-section-label">Case stream</div>
+              <input class="dw-search" id="caseSearch" placeholder="Search case ID…" />
+              <div class="dw-filters" id="caseFilters">
+                <button class="active" data-filter="all">All</button>
+                <button data-filter="needs">Needs review</button>
+                <button data-filter="priority">Priority</button>
+              </div>
+              <div id="caseStreamList"></div>
+            </div>
+
+            <!-- CENTER: RETINAL ANALYSIS WORKSPACE -->
+            <div class="dw-col dw-center">
+              <div class="dc-head">
+                <div>
+                  <div class="case-id" id="dcCaseId">CASE #RT-2048</div>
+                  <div class="case-sub" id="dcCaseSub">Captured Sep 4, 2026 · 09:14 · Community screening upload</div>
+                </div>
+              </div>
+
+              <div class="dc-quality-gate" id="dcQualityGate">
+                <h4>⚠ Insufficient for reliable screening</h4>
+                <ul>
+                  <li>Blur across the central field</li>
+                  <li>Poor illumination near the periphery</li>
+                  <li>Partial obstruction (eyelash)</li>
+                </ul>
+                <div class="qg-cta">Capture a clearer image before continuing.</div>
+              </div>
+
+              <div id="dcAnalysisArea">
+                <div class="dc-toolbar" id="dcToolbar">
+                  <button class="active" data-dcmode="original">Original</button>
+                  <button data-dcmode="ai">AI overlay</button>
+                  <button data-dcmode="heat">Heatmap</button>
+                  <button data-dcmode="vessels">Vessels</button>
+                  <button data-dcmode="compare">Comparison</button>
+                  <div class="dc-tools-right">
+                    <button id="dcZoomIn" aria-label="Zoom in">+</button>
+                    <button id="dcZoomOut" aria-label="Zoom out">–</button>
+                    <button id="dcZoomReset" aria-label="Reset">⟲</button>
+                  </div>
+                </div>
+
+                <div class="dc-stage-wrap" id="dcStageWrap"></div>
+
+                <div class="dc-confidence">
+                  <div class="dc-conf-label">AI confidence</div>
+                  <div class="dc-conf-track"><div class="dc-conf-fill" id="dcConfFill"></div><div class="dc-conf-marker" id="dcConfMarker"></div></div>
+                  <div class="dc-conf-ends"><span>Lower</span><span>Higher</span></div>
+                  <div class="dc-conf-value" id="dcConfValue">0.87</div>
+                  <div class="dc-conf-meta">
+                    <span>Image quality: <b id="dcMetaQuality">Good</b></span>
+                    <span>Model confidence: <b id="dcMetaConfidence">High</b></span>
+                    <span>Review status: <b id="dcMetaStatus">Pending</b></span>
+                  </div>
+                </div>
+
+                <div class="dc-journey">
+                  <div class="dw-section-label" style="text-align:center;">Case journey</div>
+                  <div class="dc-journey-row" id="dcJourneyRow"></div>
+                </div>
+
+                <div class="dc-journey" style="margin-top:22px;">
+                  <div class="dw-section-label" style="text-align:center;">From image to action</div>
+                  <div class="fita-flow">
+                    <span class="fita-node">Image</span><span class="fita-arrow">→</span>
+                    <span class="fita-node">Quality</span><span class="fita-arrow">→</span>
+                    <span class="fita-node">AI finding</span><span class="fita-arrow">→</span>
+                    <span class="fita-node">Visual evidence</span><span class="fita-arrow">→</span>
+                    <span class="fita-node">Clinician review</span><span class="fita-arrow">→</span>
+                    <span class="fita-node">Next action</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: AI BRIEF -->
+            <div class="dw-col dw-right">
+              <div class="ai-brief-title">AI brief</div>
+
+              <div class="ab-section">
+                <h4>Screening assessment</h4>
+                <p id="abAssessment">Patterns in this image are consistent with diabetic retinopathy, driven mainly by microvascular change near the superior arcade.</p>
+              </div>
+              <div class="ab-section">
+                <h4>What the AI saw</h4>
+                <div id="wtsList"></div>
+              </div>
+              <div class="ab-section">
+                <h4>Image quality</h4>
+                <p id="abQuality">Good — sharpness 0.88, illumination 0.81, field of view 0.92.</p>
+              </div>
+              <div class="ab-section">
+                <h4>AI vs. clinician</h4>
+                <div class="av-c-row">
+                  <div class="av-c-col">
+                    <h5>AI screening</h5>
+                    <ul><li>Indicators detected</li><li>Confidence score</li><li>Evidence regions</li></ul>
+                  </div>
+                  <div class="av-arrow">→</div>
+                  <div class="av-c-col">
+                    <h5>Clinician review</h5>
+                    <ul><li>Confirmed</li><li>Modified</li><li>Rejected</li><li>Needs further evaluation</li></ul>
+                  </div>
+                </div>
+              </div>
+              <div class="ab-section">
+                <h4>Clinician review</h4>
+                <div class="clin-review-opts">
+                  <label><input type="radio" name="clinReview" value="agree"> Agree with AI-assisted finding</label>
+                  <label><input type="radio" name="clinReview" value="further"> Needs further review</label>
+                  <label><input type="radio" name="clinReview" value="quality"> Insufficient image quality</label>
+                  <label><input type="radio" name="clinReview" value="other"> Other</label>
+                </div>
+                <textarea class="clin-note" id="clinNote" placeholder="Clinician notes…"></textarea>
+                <button class="btn-mark-reviewed" id="markReviewedBtn">Mark as reviewed</button>
+                <div class="review-confirmed" id="reviewConfirmed">✓ Recorded — thank you.</div>
+              </div>
+
+              <div class="dc-report-preview" id="dcReportPreview">
+                <h4>Report preview</h4>
+                <div class="rp-row"><span>Case</span><span id="rpCase">RT-2048</span></div>
+                <div class="rp-row"><span>AI-assisted finding</span><span id="rpFinding">Diabetic retinopathy</span></div>
+                <div class="rp-row"><span>Confidence</span><span id="rpConfidence">0.87</span></div>
+                <div class="rp-row"><span>Image quality</span><span id="rpQuality">Good</span></div>
+                <div class="rp-row"><span>Clinician review</span><span id="rpReview">Pending</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ TRACE THE DECISION OVERLAY ============ -->
+<div class="trace-overlay" id="traceOverlay">
+  <div class="trace-card">
+    <div class="trace-head">
+      <h3>Trace the decision</h3>
+      <button class="trace-close" id="traceCloseBtn">Close ✕</button>
+    </div>
+    <div class="trace-body">
+      <div class="trace-stage-img" id="traceStageImg"></div>
+      <div class="trace-steps" id="traceSteps"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  /* ---------------- MOCK DATA (kept separate from rendering) ---------------- */
+  const MOCK_CASE = {
+    caseId: "RT-2048",
+    capturedAt: "Sep 4, 2026 · 09:14",
+    condition: "Diabetic retinopathy",
+    confidence: 0.87,
+    riskPercent: 62, // position on the low->critical scale
+    riskLabel: "Moderate",
+    imageQuality: "Good",
+    findings: [
+      { title:"Microvascular change, superior arcade", detail:"Small pockets of vessel dilation consistent with early microaneurysms.", confidence:0.87, x:44, y:32,
+        location:"Superior temporal quadrant", feature:"Vessel dilation pattern", contribution:38,
+        simple:"The AI noticed a small pattern here that stood out from a typical retina.",
+        why:"This pattern is one of the more common early signs clinicians look for, so it carried more weight in the result." },
+      { title:"Localized abnormal region, temporal periphery", detail:"A cluster of pixel-level irregularities outside the healthy-retina range.", confidence:0.74, x:72, y:57,
+        location:"Temporal periphery", feature:"Pixel-level irregularity cluster", contribution:27,
+        simple:"A cluster of small spots here looked different from the surrounding area.",
+        why:"Clusters like this can indicate a localized change worth a closer look." },
+      { title:"Macular area characteristics", detail:"Texture around the macula scored separately; changes here carry more weight.", confidence:0.61, x:60, y:50,
+        location:"Macular region", feature:"Texture deviation", contribution:22,
+        simple:"The texture of the central retina looked slightly different than expected.", 
+        why:"The macula is central to vision, so even small changes here are weighted more heavily." },
+      { title:"Vessel pattern, inferior arcade", detail:"Minor tortuosity noted; a small contributor to the overall score.", confidence:0.52, x:42, y:68,
+        location:"Inferior arcade", feature:"Vessel tortuosity", contribution:13,
+        simple:"A slight curve in a blood vessel here was a minor factor.",
+        why:"On its own this is a weak signal, which is why it contributed the least to the result." }
+    ],
+    journeyStage: 4 // index of current completed stage (0-based) out of JOURNEY_STAGES
+  };
+
+  const PREV_CASE = {
+    caseId: "RT-1904",
+    capturedAt: "Jun 12, 2026 · 10:02",
+    condition: "No significant change",
+    confidence: 0.79,
+    riskLabel: "Low",
+    imageQuality: "Good"
+  };
+
+  const JOURNEY_STAGES = ["Image captured","Image quality checked","AI screening","Result explained","Clinical review","Next step"];
+
+  /* Mock case stream for the doctor workspace. The active/demo case is RT-2048. */
+  const CASE_LIST = [
+    { id:"RT-2048", status:"ai", statusLabel:"AI review", risk:"moderate", riskLabel:"Moderate", quality:"good", active:true },
+    { id:"RT-2047", status:"clin", statusLabel:"Clinician review", risk:"high", riskLabel:"High", quality:"good" },
+    { id:"RT-2046", status:"done", statusLabel:"Completed", risk:"low", riskLabel:"Low", quality:"good" },
+    { id:"RT-2045", status:"ai", statusLabel:"AI review", risk:"moderate", riskLabel:"Moderate", quality:"poor", flag:"Image quality flagged" },
+    { id:"RT-2044", status:"done", statusLabel:"Completed", risk:"low", riskLabel:"Low", quality:"good" }
+  ];
+
+  /* ---------------- RETINA SVG BUILDER ---------------- */
+  function retinaSVG(idPrefix, opts){
+    opts = opts || {};
+    const showRegions = opts.showRegions !== false;
+    const heat = !!opts.heat;
+    const imgHref = opts.imgHref || null;
+    const gid = idPrefix;
+    return `
+    <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Retinal fundus image with AI-detected regions">
+      <defs>
+        <radialGradient id="${gid}-base" cx="42%" cy="46%" r="65%">
+          <stop offset="0%" stop-color="#7A342A"/>
+          <stop offset="55%" stop-color="#5C2620"/>
+          <stop offset="100%" stop-color="#33130F"/>
+        </radialGradient>
+        <radialGradient id="${gid}-disc" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#E8C79A"/>
+          <stop offset="100%" stop-color="#C99B66"/>
+        </radialGradient>
+        <radialGradient id="${gid}-macula" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#2A0F0C" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#2A0F0C" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="${gid}-heat1" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FF7A45" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#FF7A45" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="${gid}-heat2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#FFC24B" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#FFC24B" stop-opacity="0"/>
+        </radialGradient>
+        <clipPath id="${gid}-clip"><circle cx="300" cy="300" r="284"/></clipPath>
+      </defs>
+
+      <g clip-path="url(#${gid}-clip)">
+        ${imgHref
+          ? `<image href="${imgHref}" x="16" y="16" width="568" height="568" preserveAspectRatio="xMidYMid slice"/>`
+          : `<circle cx="300" cy="300" r="284" fill="url(#${gid}-base)"/>
+             <circle cx="215" cy="300" r="40" fill="url(#${gid}-disc)"/>
+             <circle cx="360" cy="300" r="60" fill="url(#${gid}-macula)"/>
+             <g stroke="#7A2E24" stroke-width="3" fill="none" opacity="0.75" stroke-linecap="round">
+               <path d="M225 280 C 270 220, 340 190, 410 175"/>
+               <path d="M225 290 C 260 250, 300 230, 360 205"/>
+               <path d="M228 315 C 260 340, 300 355, 350 345"/>
+               <path d="M225 325 C 270 385, 330 415, 400 430"/>
+               <path d="M205 270 C 190 230, 175 195, 165 150"/>
+               <path d="M205 330 C 185 370, 165 400, 145 440"/>
+             </g>
+             <g stroke="#8C382C" stroke-width="1.6" fill="none" opacity="0.55" stroke-linecap="round">
+               <path d="M270 220 C 300 205, 330 200, 360 195"/>
+               <path d="M300 235 C 330 225, 355 222, 385 222"/>
+               <path d="M270 355 C 300 370, 335 378, 370 380"/>
+             </g>`
+        }
+        ${heat ? `
+          <ellipse cx="264" cy="192" rx="46" ry="34" fill="url(#${gid}-heat1)"/>
+          <ellipse cx="432" cy="342" rx="52" ry="40" fill="url(#${gid}-heat2)"/>
+          <ellipse cx="360" cy="300" rx="70" ry="60" fill="url(#${gid}-heat2)" opacity="0.55"/>
+        ` : ``}
+      </g>
+      <circle cx="300" cy="300" r="284" fill="none" stroke="#000" stroke-opacity="0.35" stroke-width="10"/>
+
+      ${showRegions ? `
+        <g class="region-marker" data-idx="0" tabindex="0">
+          <ellipse class="ring" cx="264" cy="192" rx="30" ry="22"/>
+          <circle class="dot" cx="264" cy="192" r="4"/>
+        </g>
+        <g class="region-marker" data-idx="1" tabindex="0">
+          <ellipse class="ring" cx="432" cy="342" rx="34" ry="26"/>
+          <circle class="dot" cx="432" cy="342" r="4"/>
+        </g>
+        <g class="region-marker" data-idx="2" tabindex="0">
+          <ellipse class="ring" cx="360" cy="300" rx="54" ry="46"/>
+          <circle class="dot" cx="360" cy="300" r="4"/>
+        </g>
+        <g class="region-marker" data-idx="3" tabindex="0">
+          <ellipse class="ring" cx="252" cy="408" rx="32" ry="20"/>
+          <circle class="dot" cx="252" cy="408" r="4"/>
+        </g>
+      ` : ``}
+    </svg>`;
+  }
+
+  /* ---------------- HERO RETINA ---------------- */
+  const heroStage = document.getElementById('heroRetinaStage');
+  heroStage.insertAdjacentHTML('afterbegin', retinaSVG('hero', {showRegions:true, heat:false}));
+  const heroHoverLabel = document.getElementById('heroHoverLabel');
+  wireHoverRegions(heroStage, heroHoverLabel);
+
+  /* ---------------- EXPLAIN SECTION RETINA ---------------- */
+  const explainStage = document.getElementById('explainStage');
+  explainStage.insertAdjacentHTML('afterbegin', retinaSVG('explain', {showRegions:true, heat:false}));
+  const explainHoverLabel = document.getElementById('explainHoverLabel');
+  wireHoverRegions(explainStage, explainHoverLabel);
+
+  document.querySelectorAll('.evidence-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      document.querySelectorAll('.evidence-item').forEach(i=>i.classList.remove('active'));
+      item.classList.add('active');
+      const idx = item.getAttribute('data-marker');
+      explainStage.querySelectorAll('.region-marker').forEach(m=>m.classList.remove('active'));
+      const target = explainStage.querySelector(`.region-marker[data-idx="${idx}"]`);
+      if(target){
+        target.classList.add('active');
+        const f = MOCK_CASE.findings[idx];
+        showLabelAt(explainHoverLabel, explainStage, f);
+        setTimeout(()=>explainHoverLabel.classList.remove('show'), 1800);
+      }
+    });
+  });
+
+  function wireHoverRegions(stage, labelEl){
+    stage.querySelectorAll('.region-marker').forEach(marker=>{
+      marker.addEventListener('mouseenter', ()=>{
+        const idx = marker.getAttribute('data-idx');
+        showLabelAt(labelEl, stage, MOCK_CASE.findings[idx]);
+      });
+      marker.addEventListener('mouseleave', ()=> labelEl.classList.remove('show'));
+      marker.addEventListener('focus', ()=>{
+        const idx = marker.getAttribute('data-idx');
+        showLabelAt(labelEl, stage, MOCK_CASE.findings[idx]);
+      });
+      marker.addEventListener('blur', ()=> labelEl.classList.remove('show'));
+    });
+  }
+  function showLabelAt(labelEl, stage, finding){
+    if(!finding) return;
+    const rect = stage.getBoundingClientRect();
+    labelEl.innerHTML = `${finding.title}<br><span class="conf">confidence ${finding.confidence}</span>`;
+    labelEl.style.left = Math.min(rect.width - 170, (finding.x/100)*rect.width + 14) + 'px';
+    labelEl.style.top = Math.max(0, (finding.y/100)*rect.height - 40) + 'px';
+    labelEl.classList.add('show');
+  }
+
+  /* ---------------- NAV SCROLL COMPACT ---------------- */
+  const nav = document.getElementById('siteNav');
+  window.addEventListener('scroll', ()=>{
+    nav.classList.toggle('compact', window.scrollY > 30);
+  }, {passive:true});
+
+  document.getElementById('heroHowBtn').addEventListener('click', ()=>{
+    document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'});
+  });
+
+  /* ================= OVERLAY WORKSPACE LOGIC ================= */
+  const overlay = document.getElementById('analysisOverlay');
+  const stageUpload = document.getElementById('stageUpload');
+  const stageScan = document.getElementById('stageScan');
+  const stageResult = document.getElementById('stageResult');
+
+  let uploadedImageData = null; // data URL if user provides a real image
+
+  function openOverlay(){
+    overlay.classList.add('open');
+    document.body.style.overflow='hidden';
+    showStage('upload');
+  }
+  function closeOverlay(){
+    overlay.classList.remove('open');
+    document.body.style.overflow='';
+  }
+  document.getElementById('heroAnalyzeBtn').addEventListener('click', openOverlay);
+  document.getElementById('navTryBtn').addEventListener('click', openOverlay);
+  document.getElementById('overlayCloseBtn').addEventListener('click', closeOverlay);
+
+  function showStage(name){
+    stageUpload.style.display = name==='upload' ? '' : 'none';
+    stageScan.style.display = name==='scan' ? '' : 'none';
+    stageResult.style.display = name==='result' ? '' : 'none';
+    document.getElementById('analysisOverlay').querySelector('.overlay-body').scrollTop = 0;
+  }
+
+  /* ---- upload interactions ---- */
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const browseBtn = document.getElementById('browseBtn');
+  const previewCard = document.getElementById('previewCard');
+  const previewThumb = document.getElementById('previewThumb');
+  const previewFilename = document.getElementById('previewFilename');
+  const changeImageBtn = document.getElementById('changeImageBtn');
+  const startAnalysisBtn = document.getElementById('startAnalysisBtn');
+
+  browseBtn.addEventListener('click', ()=> fileInput.click());
+  dropzone.addEventListener('click', ()=> fileInput.click());
+  dropzone.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' ') fileInput.click(); });
+
+  ['dragenter','dragover'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); });
+  });
+  dropzone.addEventListener('drop', e=>{
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  });
+  fileInput.addEventListener('change', e=>{
+    const f = e.target.files[0];
+    if(f) handleFile(f);
+  });
+
+  function handleFile(file){
+    previewFilename.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      uploadedImageData = reader.result;
+      previewThumb.innerHTML = `<img src="${reader.result}" alt="Uploaded retinal image preview"/>`;
+      previewCard.classList.add('show');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function loadDemoSample(){
+    uploadedImageData = null;
+    previewFilename.textContent = 'sample_fundus_RT-2048.jpg';
+    previewThumb.innerHTML = retinaSVG('thumb', {showRegions:false, heat:false});
+    previewCard.classList.add('show');
+  }
+
+  changeImageBtn.addEventListener('click', ()=>{
+    previewCard.classList.remove('show');
+    fileInput.value = '';
+  });
+
+  document.getElementById('demoCaseBtn').addEventListener('click', ()=>{
+    openOverlay();
+    loadDemoSample();
+    setTimeout(runScan, 500);
+  });
+
+  startAnalysisBtn.addEventListener('click', runScan);
+
+  /* ---- scanning stage ---- */
+  const sysMessages = [
+    "Image received…",
+    "Checking image quality…",
+    "Mapping retinal structures…",
+    "Examining suspicious regions…",
+    "Generating visual explanation…",
+    "Finalizing result…"
+  ];
+  let scanTimers = [];
+
+  function runScan(){
+    showStage('scan');
+    const scanVisual = document.getElementById('scanVisual');
+    scanVisual.innerHTML = `<div class="scan-line"></div>` + retinaSVG('scan', {showRegions:false, heat:false, imgHref: uploadedImageData});
+    const stepsList = document.getElementById('stepsList');
+    const sysMsg = document.getElementById('sysMsg');
+    stepsList.querySelectorAll('li').forEach(li=> li.classList.remove('active','done'));
+
+    scanTimers.forEach(t=>clearTimeout(t));
+    scanTimers = [];
+
+    const items = stepsList.querySelectorAll('li');
+    const stepDuration = 620;
+    items.forEach((li, i)=>{
+      scanTimers.push(setTimeout(()=>{
+        items.forEach(x=>x.classList.remove('active'));
+        li.classList.add('active');
+        sysMsg.textContent = sysMessages[i];
+      }, i*stepDuration));
+      scanTimers.push(setTimeout(()=>{
+        li.classList.remove('active');
+        li.classList.add('done');
+      }, i*stepDuration + stepDuration - 80));
+    });
+
+    scanTimers.push(setTimeout(()=>{
+      buildResult();
+      showStage('result');
+    }, items.length*stepDuration + 200));
+  }
+
+  /* ================= RESULT STAGE: ROLE CHOOSER + PATIENT + DOCTOR ================= */
+
+  const roleChooser = document.getElementById('roleChooser');
+  const patientExperience = document.getElementById('patientExperience');
+  const doctorExperience = document.getElementById('doctorExperience');
+  const overlayInner = document.querySelector('#stageResult').closest('.overlay-inner');
+
+  let activeCaseId = 'RT-2048'; // which mock case is currently open in the doctor workspace
+  let patientBuilt = false, doctorBuilt = false;
+
+  function buildResult(){
+    overlayInner.classList.remove('wide');
+    roleChooser.style.display = '';
+    patientExperience.style.display = 'none';
+    doctorExperience.style.display = 'none';
+    patientBuilt = false;
+    doctorBuilt = false;
+    activeCaseId = 'RT-2048';
+  }
+
+  function goToRole(role){
+    roleChooser.style.display = 'none';
+    if(role==='patient'){
+      patientExperience.style.display = '';
+      doctorExperience.style.display = 'none';
+      overlayInner.classList.remove('wide');
+      if(!patientBuilt){ buildPatientExperience(); patientBuilt = true; }
+    } else {
+      doctorExperience.style.display = '';
+      patientExperience.style.display = 'none';
+      overlayInner.classList.add('wide');
+      if(!doctorBuilt){ buildDoctorExperience(); doctorBuilt = true; }
+    }
+    document.getElementById('analysisOverlay').querySelector('.overlay-body').scrollTop = 0;
+  }
+
+  document.getElementById('chooseCardPatient').addEventListener('click', ()=> goToRole('patient'));
+  document.getElementById('chooseCardDoctor').addEventListener('click', ()=> goToRole('doctor'));
+  [document.getElementById('chooseCardPatient'), document.getElementById('chooseCardDoctor')].forEach(c=>{
+    c.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') c.click(); });
+  });
+  document.getElementById('pillDoctorFromPatientBtn').addEventListener('click', ()=> goToRole('doctor'));
+  document.getElementById('pillPatientFromDoctorBtn').addEventListener('click', ()=> goToRole('patient'));
+  document.getElementById('pillPatientBtn').addEventListener('click', ()=>{});
+  document.getElementById('pillDoctorBtn').addEventListener('click', ()=>{});
+
+  function resetToUpload(){
+    previewCard.classList.remove('show');
+    fileInput.value='';
+    uploadedImageData = null;
+    showStage('upload');
+  }
+  document.getElementById('newScreeningFromPatientBtn').addEventListener('click', resetToUpload);
+  document.getElementById('newScreeningFromDoctorBtn').addEventListener('click', resetToUpload);
+
+  overlay.addEventListener('keydown', e=>{
+    if(e.key === 'Escape') closeOverlay();
+  });
+
+  /* ============================= PATIENT EXPERIENCE ============================= */
+
+  function buildPatientExperience(){
+    document.getElementById('pLatestThumb').innerHTML = retinaSVG('pLatest', {showRegions:false, heat:false, imgHref: uploadedImageData});
+    document.getElementById('pLatestDate').textContent = MOCK_CASE.capturedAt.split(' · ')[0];
+    document.getElementById('pDetailedCount').textContent = MOCK_CASE.findings.length;
+    document.getElementById('pTechConfidence').textContent = MOCK_CASE.confidence;
+    document.getElementById('pTechQuality').textContent = MOCK_CASE.imageQuality;
+    document.getElementById('pTechCount').textContent = MOCK_CASE.findings.length;
+
+    /* "Explain my result" -> reveal 3 layers one at a time */
+    const pLayers = document.getElementById('pLayers');
+    const layerEls = pLayers.querySelectorAll('.p-layer');
+    document.getElementById('explainResultBtn').addEventListener('click', function go(){
+      pLayers.classList.add('show');
+      layerEls.forEach(l=>l.classList.remove('in'));
+      layerEls.forEach((l,i)=>{
+        setTimeout(()=> l.classList.add('in'), i*450 + 120);
+      });
+      pLayers.scrollIntoView({behavior:'smooth', block:'center'});
+    });
+
+    /* interactive retinal visualization with tap regions */
+    const pVizStage = document.getElementById('pVizStage');
+    pVizStage.innerHTML = retinaSVG('pViz', {showRegions:true, heat:false, imgHref: uploadedImageData});
+    const pPop = document.createElement('div');
+    pPop.className = 'p-region-pop';
+    pPop.id = 'pRegionPop';
+    pVizStage.appendChild(pPop);
+
+    pVizStage.querySelectorAll('.region-marker').forEach(marker=>{
+      marker.addEventListener('click', ()=>{
+        const idx = marker.getAttribute('data-idx');
+        const f = MOCK_CASE.findings[idx];
+        showPatientRegionPop(f, pVizStage, pPop);
+      });
+    });
+
+    document.getElementById('pTechToggleBtn').addEventListener('click', ()=>{
+      const panel = document.getElementById('pTechPanel');
+      const willShow = !panel.classList.contains('show');
+      panel.classList.toggle('show', willShow);
+      if(willShow){
+        panel.innerHTML = MOCK_CASE.findings.map(f=>`${f.feature} — ${f.location} — model confidence ${f.confidence}`).join('<br>');
+      }
+    });
+
+    /* "Show me why" sequential reveal */
+    document.getElementById('showMeWhyBtn').addEventListener('click', runShowMeWhy);
+
+    /* three-level result tabs */
+    const pResultTabs = document.getElementById('pResultTabs');
+    pResultTabs.addEventListener('click', e=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      pResultTabs.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b===btn));
+      ['simple','detailed','technical'].forEach(name=>{
+        document.getElementById('pTab'+cap(name)).classList.toggle('show', name===btn.getAttribute('data-ptab'));
+      });
+    });
+
+    /* screening journey */
+    const pJourneyPath = document.getElementById('pJourneyPath');
+    pJourneyPath.innerHTML = JOURNEY_STAGES.map((label,i)=>`
+      <div class="pj-stage ${i<=MOCK_CASE.journeyStage?'done':''} ${i===MOCK_CASE.journeyStage?'current':''}">
+        <div class="pj-dot">${i<=MOCK_CASE.journeyStage?'✓':(i+1)}</div>
+        <div class="pj-label">${label}</div>
+      </div>
+    `).join('');
+
+    /* screening history */
+    const pHistoryList = document.getElementById('pHistoryList');
+    pHistoryList.innerHTML = `
+      <div class="p-hist-year">2026</div>
+      <div class="p-hist-item" id="pHistCurrent"><span class="p-hist-dot"></span><span class="month">September</span><span class="desc">Screening · result available</span></div>
+      <div class="p-hist-item" id="pHistPrevious"><span class="p-hist-dot"></span><span class="month">June</span><span class="desc">Screening · result available</span></div>
+    `;
+    document.getElementById('pHistCurrent').addEventListener('click', ()=> togglePatientCompare(true));
+    document.getElementById('pHistPrevious').addEventListener('click', ()=> togglePatientCompare(true));
+
+    const pCompareStage = document.getElementById('pCompareStage');
+    function togglePatientCompare(open){
+      const block = document.getElementById('pCompareBlock');
+      block.classList.toggle('show', open);
+      if(open){
+        pCompareStage.innerHTML = `
+          <div class="compare-layer" id="pCmpPrev">${retinaSVG('pCmpPrev', {showRegions:false, heat:false})}</div>
+          <div class="compare-layer" id="pCmpNow" style="clip-path: inset(0 0 0 50%);">${retinaSVG('pCmpNow', {showRegions:true, heat:false, imgHref: uploadedImageData})}</div>
+          <div class="compare-handle" id="pCompareHandle" style="left:50%;"></div>
+        `;
+        wireGenericCompareHandle(pCompareStage, document.getElementById('pCompareHandle'), document.getElementById('pCmpNow'));
+        block.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+    }
+  }
+
+  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+  function showPatientRegionPop(finding, stage, pop){
+    const rect = stage.getBoundingClientRect();
+    pop.innerHTML = `<b>Highlighted area</b>${finding.simple}<span class="why">Why this matters: ${finding.why}</span>`;
+    pop.style.left = Math.min(rect.width-230, Math.max(4,(finding.x/100)*rect.width - 40)) + 'px';
+    pop.style.top = Math.max(0, (finding.y/100)*rect.height - 10) + 'px';
+    pop.classList.add('show');
+    clearTimeout(pop._t);
+    pop._t = setTimeout(()=> pop.classList.remove('show'), 4200);
+  }
+
+  function runShowMeWhy(){
+    const stage = document.getElementById('pVizStage');
+    const caption = document.getElementById('pShowMeCaption');
+    stage.innerHTML = retinaSVG('pShowMe', {showRegions:false, heat:false, imgHref: uploadedImageData});
+    const lines = [
+      "First, the AI examined the retinal vessels.",
+      "Then it identified an unusual pattern.",
+      "That pattern contributed to the screening assessment."
+    ];
+    let i = 0;
+    function step(){
+      caption.textContent = lines[i];
+      caption.classList.add('show');
+      if(i===1){
+        stage.innerHTML = retinaSVG('pShowMe2', {showRegions:true, heat:false, imgHref: uploadedImageData});
+      }
+      if(i===2){
+        stage.innerHTML = retinaSVG('pShowMe3', {showRegions:true, heat:true, imgHref: uploadedImageData});
+      }
+      i++;
+      if(i<lines.length) setTimeout(step, 1900);
+    }
+    caption.classList.remove('show');
+    setTimeout(step, 150);
+  }
+
+  function wireGenericCompareHandle(stageEl, handle, movingLayer){
+    let dragging = false;
+    function setPos(clientX){
+      const rect = stageEl.getBoundingClientRect();
+      let pct = ((clientX - rect.left) / rect.width) * 100;
+      pct = Math.max(2, Math.min(98, pct));
+      handle.style.left = pct + '%';
+      movingLayer.style.clipPath = `inset(0 0 0 ${pct}%)`;
+    }
+    handle.addEventListener('mousedown', ()=> dragging = true);
+    window.addEventListener('mousemove', e=>{ if(dragging) setPos(e.clientX); });
+    window.addEventListener('mouseup', ()=> dragging = false);
+    handle.addEventListener('touchstart', ()=> dragging = true, {passive:true});
+    window.addEventListener('touchmove', e=>{ if(dragging && e.touches[0]) setPos(e.touches[0].clientX); }, {passive:true});
+    window.addEventListener('touchend', ()=> dragging = false);
+  }
+
+  /* ============================= DOCTOR EXPERIENCE ============================= */
+
+  let dcMode = 'original';
+  let dcZoom = 1;
+
+  function buildDoctorExperience(){
+    renderCaseStream();
+    openDoctorCase(activeCaseId);
+
+    document.getElementById('caseFilters').addEventListener('click', e=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      document.querySelectorAll('#caseFilters button').forEach(b=>b.classList.toggle('active', b===btn));
+      renderCaseStream(btn.getAttribute('data-filter'));
+    });
+    document.getElementById('caseSearch').addEventListener('input', e=>{
+      renderCaseStream(null, e.target.value.trim().toUpperCase());
+    });
+
+    document.getElementById('dcToolbar').addEventListener('click', e=>{
+      const btn = e.target.closest('button[data-dcmode]');
+      if(!btn) return;
+      document.querySelectorAll('#dcToolbar button[data-dcmode]').forEach(b=>b.classList.toggle('active', b===btn));
+      dcMode = btn.getAttribute('data-dcmode');
+      renderDoctorStage();
+    });
+    document.getElementById('dcZoomIn').addEventListener('click', ()=> setDcZoom(dcZoom+0.25));
+    document.getElementById('dcZoomOut').addEventListener('click', ()=> setDcZoom(dcZoom-0.25));
+    document.getElementById('dcZoomReset').addEventListener('click', ()=> setDcZoom(1));
+
+    document.getElementById('markReviewedBtn').addEventListener('click', ()=>{
+      document.getElementById('reviewConfirmed').classList.add('show');
+      document.getElementById('dcMetaStatus').textContent = 'Reviewed';
+      const checked = document.querySelector('input[name="clinReview"]:checked');
+      document.getElementById('rpReview').textContent = checked ? checked.parentElement.textContent.trim() : 'Reviewed';
+    });
+
+    document.getElementById('generateReportBtn').addEventListener('click', ()=>{
+      const preview = document.getElementById('dcReportPreview');
+      preview.classList.add('show');
+      preview.scrollIntoView({behavior:'smooth', block:'center'});
+    });
+
+    document.getElementById('traceDecisionBtn').addEventListener('click', runTraceTheDecision);
+    document.getElementById('traceCloseBtn').addEventListener('click', ()=>{
+      document.getElementById('traceOverlay').classList.remove('show');
+    });
+  }
+
+  function setDcZoom(z){
+    dcZoom = Math.max(0.75, Math.min(2, z));
+    document.getElementById('dcStageWrap').style.transform = `scale(${dcZoom})`;
+  }
+
+  function renderCaseStream(filter, search){
+    const list = document.getElementById('caseStreamList');
+    let items = CASE_LIST.slice();
+    if(filter==='needs') items = items.filter(c=>c.status!=='done');
+    if(filter==='priority') items = items.filter(c=>c.risk==='high'||c.risk==='moderate');
+    if(search) items = items.filter(c=>c.id.includes(search));
+    list.innerHTML = items.map(c=>`
+      <div class="case-card ${c.id===activeCaseId?'active':''}" data-case="${c.id}">
+        <div class="cid">#${c.id}</div>
+        <div class="crow">
+          <span class="case-status ${c.status}">${c.statusLabel.toUpperCase()}</span>
+          <span class="case-risk ${c.risk}">${c.riskLabel}</span>
+        </div>
+        ${c.flag ? `<div class="case-quality-flag">⚠ ${c.flag}</div>` : ``}
+      </div>
+    `).join('');
+    list.querySelectorAll('.case-card').forEach(card=>{
+      card.addEventListener('click', ()=> openDoctorCase(card.getAttribute('data-case')));
+    });
+  }
+
+  function openDoctorCase(caseId){
+    activeCaseId = caseId;
+    renderCaseStream();
+    const meta = CASE_LIST.find(c=>c.id===caseId) || CASE_LIST[0];
+    document.getElementById('dcCaseId').textContent = 'CASE #'+caseId;
+    document.getElementById('dcCaseSub').textContent = caseId===MOCK_CASE.caseId
+      ? `Captured ${MOCK_CASE.capturedAt} · Community screening upload`
+      : `Captured — · sample case (demo data reused from #${MOCK_CASE.caseId})`;
+
+    const poorQuality = meta.quality === 'poor';
+    document.getElementById('dcQualityGate').classList.toggle('show', poorQuality);
+    document.getElementById('dcAnalysisArea').style.display = poorQuality ? 'none' : '';
+
+    if(!poorQuality){
+      dcMode = 'original';
+      document.querySelectorAll('#dcToolbar button[data-dcmode]').forEach(b=>b.classList.toggle('active', b.getAttribute('data-dcmode')==='original'));
+      renderDoctorStage();
+      renderConfidence();
+      renderWhatAiSaw();
+      renderJourney();
+    }
+  }
+
+  function renderDoctorStage(){
+    const wrap = document.getElementById('dcStageWrap');
+    if(dcMode==='compare'){
+      wrap.innerHTML = `
+        <div class="compare-layer" id="dcLayerPrev">${retinaSVG('dcPrev', {showRegions:false, heat:false})}</div>
+        <div class="compare-layer" id="dcLayerNow" style="clip-path: inset(0 0 0 50%);">${retinaSVG('dcNow', {showRegions:true, heat:true, imgHref: uploadedImageData})}</div>
+        <div class="compare-tag left">PREVIOUS</div>
+        <div class="compare-tag right">CURRENT</div>
+        <div class="compare-handle" id="dcCompareHandle" style="left:50%;"></div>
+      `;
+      wireGenericCompareHandle(wrap, document.getElementById('dcCompareHandle'), document.getElementById('dcLayerNow'));
+      return;
+    }
+    const showRegions = dcMode==='ai' || dcMode==='vessels';
+    const heat = dcMode==='heat';
+    wrap.innerHTML = retinaSVG('dcStage', {showRegions, heat, imgHref: uploadedImageData});
+    if(showRegions){
+      const flyout = document.createElement('div');
+      flyout.className='dc-region-flyout';
+      flyout.id='dcRegionFlyout';
+      wrap.appendChild(flyout);
+      wrap.querySelectorAll('.region-marker').forEach(marker=>{
+        marker.addEventListener('click', ()=> showDoctorFlyout(marker, wrap, flyout));
+      });
+    }
+  }
+
+  function showDoctorFlyout(marker, stage, flyout){
+    const idx = marker.getAttribute('data-idx');
+    const f = MOCK_CASE.findings[idx];
+    const rect = stage.getBoundingClientRect();
+    flyout.innerHTML = `<b>Region ${String(+idx+1).padStart(2,'0')} · AI confidence ${f.confidence}</b>${f.detail}
+      <button class="why-btn" data-why="${idx}">Why?</button>
+      <div class="why-detail" id="dcWhyDetail" style="display:none;"></div>`;
+    flyout.style.left = Math.min(rect.width-240, Math.max(4,(f.x/100)*rect.width - 30)) + 'px';
+    flyout.style.top = Math.max(0, (f.y/100)*rect.height - 20) + 'px';
+    flyout.classList.add('show');
+    flyout.querySelector('.why-btn').addEventListener('click', ()=>{
+      const d = flyout.querySelector('#dcWhyDetail');
+      d.style.display='block';
+      d.innerHTML = `<ol>
+        <li>Feature detected: ${f.feature}</li>
+        <li>Location: ${f.location}</li>
+        <li>Model confidence: ${f.confidence}</li>
+        <li>Contribution to assessment: ${f.contribution}%</li>
+      </ol>`;
+    });
+  }
+
+  function renderConfidence(){
+    const pct = Math.round(MOCK_CASE.confidence*100);
+    document.getElementById('dcConfFill').style.width = pct+'%';
+    document.getElementById('dcConfMarker').style.left = pct+'%';
+    document.getElementById('dcConfValue').textContent = MOCK_CASE.confidence;
+    document.getElementById('dcMetaQuality').textContent = MOCK_CASE.imageQuality;
+    document.getElementById('dcMetaConfidence').textContent = MOCK_CASE.confidence >= 0.8 ? 'High' : (MOCK_CASE.confidence>=0.6?'Moderate':'Low');
+  }
+
+  function renderWhatAiSaw(){
+    const list = document.getElementById('wtsList');
+    list.innerHTML = MOCK_CASE.findings.map((f,i)=>`
+      <div class="wts-item" data-idx="${i}">
+        <span class="wi-idx">${String(i+1).padStart(2,'0')}</span>${f.feature} — ${f.location}
+      </div>
+    `).join('');
+    list.querySelectorAll('.wts-item').forEach(item=>{
+      item.addEventListener('click', ()=>{
+        list.querySelectorAll('.wts-item').forEach(i=>i.classList.remove('active'));
+        item.classList.add('active');
+        if(dcMode!=='ai'){
+          dcMode='ai';
+          document.querySelectorAll('#dcToolbar button[data-dcmode]').forEach(b=>b.classList.toggle('active', b.getAttribute('data-dcmode')==='ai'));
+          renderDoctorStage();
+        }
+        const idx = item.getAttribute('data-idx');
+        const marker = document.querySelector(`#dcStageWrap .region-marker[data-idx="${idx}"]`);
+        const flyout = document.getElementById('dcRegionFlyout');
+        if(marker && flyout) showDoctorFlyout(marker, document.getElementById('dcStageWrap'), flyout);
+      });
+    });
+  }
+
+  function renderJourney(){
+    const row = document.getElementById('dcJourneyRow');
+    const baseHour = 9, baseMin = 14;
+    row.innerHTML = JOURNEY_STAGES.map((label,i)=>{
+      const t = new Date(2026,8,4,baseHour, baseMin + i*6);
+      const ts = t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
+      return `<div class="dcj-item"><div class="dot"></div><div class="lbl">${label}</div><div class="ts">${i<=MOCK_CASE.journeyStage?ts:'—'}</div></div>`;
+    }).join('');
+  }
+
+  function runTraceTheDecision(){
+    const overlayEl = document.getElementById('traceOverlay');
+    const img = document.getElementById('traceStageImg');
+    const steps = document.getElementById('traceSteps');
+    img.innerHTML = retinaSVG('trace', {showRegions:true, heat:false, imgHref: uploadedImageData});
+    const seq = [
+      { b:"Retinal image", t:"Starting from the captured fundus photograph." },
+      { b:"Region identified", t:"The model flagged "+MOCK_CASE.findings[0].location+" as worth closer inspection." },
+      { b:"Feature detected", t:MOCK_CASE.findings[0].feature+" was identified in that region." },
+      { b:"Evidence weight", t:"This feature contributed "+MOCK_CASE.findings[0].contribution+"% to the overall assessment." },
+      { b:"AI screening assessment", t:"Combined with the other regions, the model reached a "+MOCK_CASE.riskLabel.toLowerCase()+"-risk screening result." }
+    ];
+    steps.innerHTML = seq.map(s=>`<div class="trace-step"><b>${s.b}</b>${s.t}</div>`).join('');
+    overlayEl.classList.add('show');
+    const stepEls = steps.querySelectorAll('.trace-step');
+    stepEls.forEach(s=>s.classList.remove('in'));
+    stepEls.forEach((s,i)=>{
+      setTimeout(()=>{
+        s.classList.add('in');
+        if(i===1){
+          img.innerHTML = retinaSVG('trace2', {showRegions:true, heat:false, imgHref: uploadedImageData});
+        }
+        if(i>=3){
+          img.innerHTML = retinaSVG('trace3', {showRegions:true, heat:true, imgHref: uploadedImageData});
+        }
+      }, i*950);
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>
